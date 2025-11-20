@@ -1,0 +1,99 @@
+/* Import Font Inter */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+/* === GLOBAL === */
+body {
+  font-family: "Inter", sans-serif;
+  /* Màu nền dự phòng nếu Tailwind chưa load kịp */
+  background-color: #343541;
+}
+
+/* === CUSTOM SCROLLBAR (Thanh cuộn tối màu) === */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #565869;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #acacbe;
+}
+
+/* === ANIMATIONS (Hiệu ứng trang trí) === */
+
+/* Hiệu ứng nhấp nháy (cho các ngôi sao/bông tuyết) */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+/* Hiệu ứng bay lơ lửng (cho icon ống nhòm trang Bot) */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* === SIDEBAR STYLES === */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  color: #d1d5db;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-item:focus,
+.sidebar-item:hover {
+  background-color: #2a2b32;
+  color: #ffffff;
+}
+
+.sidebar-item.active {
+  background-color: #2a2b32;
+  color: #ffffff;
+}
+
+.sidebar-icon {
+  width: 24px;
+  display: flex;
+  justify-content: center;
+  font-size: 1rem;
+  color: inherit;
+}
+
+.sidebar-label {
+  font-weight: 500;
+  color: inherit;
+}
+
+.sidebar-item.active .sidebar-label {
+  font-weight: 600;
+}

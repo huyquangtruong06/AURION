@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi" class="bg-[#202123]">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURION - My Bots</title>
+    <link rel="icon" href="img/aurion.jpg">
+
+    <style>
+        :root {
+            color-scheme: dark;
+            background-color: #202123;
+        }
+
+        html,
+        body {
+            background-color: #202123;
+            min-height: 100%;
+        }
+    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/chat.css">
+    <style>
+        html,
+        body {
+            background-color: #202123;
+        }
+    </style>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gptMain: '#343541',      /* Nền chính */
+                        gptSidebar: '#202123',   /* Nền Sidebar */
+                        gptInput: '#40414f',     /* Nền Input/Card */
+                        gptBorder: '#4d4d4f',    /* Màu viền */
+                        gptGreen: '#10a37f',     /* Màu xanh lá (Install button) */
+                        gptHover: '#2A2B32',     /* Màu hover */
+                        gptBlue: '#3b82f6'       /* Màu xanh dương (Create button) */
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Animation cho icon trạng thái trống */
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden bg-gptMain text-gray-100 bg-[#202123]">
+
+    <aside class="w-64 bg-gptSidebar border-r border-gptBorder flex flex-col justify-between hidden md:flex">
+
+        <div>
+            <div class="p-6 flex items-center gap-2 text-xl font-bold text-white">
+                <img src="img/aurion.jpg" alt="AURION" class="w-8 h-8 rounded-lg object-cover">
+                <span>AURION</span>
+            </div>
+
+            <nav class="px-3 flex flex-col gap-2 mt-4">
+                <a href="chat.html" class="sidebar-item">
+                    <span class="sidebar-icon"><i class="fas fa-comment-alt"></i></span>
+                    <span class="sidebar-label">Chat</span>
+                </a>
+                <a href="bot.html" class="sidebar-item active">
+                    <span class="sidebar-icon"><i class="fas fa-robot"></i></span>
+                    <span class="sidebar-label">BOT</span>
+                </a>
+                <a href="data.html" class="sidebar-item">
+                    <span class="sidebar-icon"><i class="fas fa-database"></i></span>
+                    <span class="sidebar-label">Data</span>
+                </a>
+                <a href="group.html" class="sidebar-item">
+                    <span class="sidebar-icon"><i class="fas fa-users"></i></span>
+                    <span class="sidebar-label">Group</span>
+                </a>
+                <a href="referral.html" class="sidebar-item">
+                    <span class="sidebar-icon"><i class="fas fa-gift"></i></span>
+                    <span class="sidebar-label">Referral</span>
+                </a>
+                <a href="subscription.html" class="sidebar-item">
+                    <span class="sidebar-icon"><i class="fas fa-dollar-sign"></i></span>
+                    <span class="sidebar-label">Subscription</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="p-4">
+            <div class="bg-gptInput p-4 rounded-xl mb-4 border border-gray-600/50 shadow-lg">
+                <h3 class="font-bold text-white text-sm mb-1">Unlock 10+ Features</h3>
+                <p class="text-xs text-gray-400 mb-3">Web summary, email reply...</p>
+                <button
+                    class="w-full bg-gptGreen hover:opacity-90 text-white py-2 rounded-lg text-sm font-medium shadow-md transition flex items-center justify-center gap-2">
+                    <i class="fab fa-chrome"></i> Install now
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between text-gray-400 px-2 pt-2 border-t border-gray-700/50">
+                <i class="fas fa-user hover:text-white cursor-pointer text-lg transition" title="Tài khoản"></i>
+                <i class="fas fa-envelope hover:text-white cursor-pointer text-lg transition" title="Tin nhắn"></i>
+                <i class="fas fa-star hover:text-white cursor-pointer text-lg transition" title="Yêu thích"></i>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+
+        <header
+            class="h-14 border-b border-gray-600 flex items-center justify-between px-4 md:hidden bg-gptSidebar shrink-0">
+            <span class="font-bold text-white text-lg">Bots</span>
+            <i class="fas fa-bars text-gray-300 text-lg cursor-pointer"></i>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 md:p-10">
+            <div class="max-w-5xl mx-auto w-full">
+
+                <h1 class="text-3xl font-bold text-white mb-8">Bots</h1>
+
+                <div class="relative w-full mb-8">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text"
+                        class="w-full bg-gptInput text-white border border-gray-600 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block pl-11 p-4 placeholder-gray-400 shadow-sm transition outline-none"
+                        placeholder="Search...">
+                </div>
+
+                <div class="flex justify-between items-center mb-16">
+                    <button
+                        class="text-white bg-gptInput border border-gray-600 hover:bg-gptHover focus:ring-1 focus:ring-gray-500 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center transition"
+                        type="button">
+                        <i class="fas fa-filter mr-2 text-gray-400"></i>
+                        All Bots
+                        <i class="fas fa-chevron-down ml-3 text-xs text-gray-400"></i>
+                    </button>
+
+                    <button type="button"
+                        class="text-white bg-gptBlue hover:bg-blue-600 font-medium rounded-full text-sm px-6 py-2.5 shadow-lg shadow-blue-500/20 flex items-center gap-2 transition hover:-translate-y-0.5">
+                        <i class="fas fa-plus"></i>
+                        Create Bot
+                    </button>
+                </div>
+
+                <div class="flex flex-col items-center justify-center text-center mt-12">
+                    <div class="relative mb-6 animate-float">
+                        <div
+                            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-blue-500/20 rounded-full blur-xl">
+                        </div>
+
+                        <i class="fas fa-binoculars text-7xl text-blue-400 relative z-10 drop-shadow-lg"></i>
+
+                        <i class="fas fa-star text-yellow-200 absolute -top-2 right-0 text-xs animate-pulse"></i>
+                        <i class="fas fa-star text-blue-200 absolute bottom-0 left-0 text-sm animate-pulse"
+                            style="animation-delay: 1s"></i>
+                    </div>
+
+                    <h3 class="text-xl font-semibold text-white mb-2">No bots found</h3>
+                    <p class="text-gray-400 max-w-md mx-auto">You haven't created any bots yet. Click the "Create Bot"
+                        button to get started with your first AI assistant.</p>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const menuBtn = document.querySelector('.fa-bars');
+        const sidebar = document.querySelector('aside');
+
+        if (menuBtn && sidebar) {
+            menuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+                sidebar.classList.toggle('fixed');
+                sidebar.classList.toggle('inset-0');
+                sidebar.classList.toggle('z-50');
+                sidebar.classList.toggle('flex');
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi" class="bg-[#202123]">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURION - Subscription</title>
+    <link rel="icon" href="img/aurion.jpg">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            color-scheme: dark;
+            background-color: #202123;
+        }
+
+        html,
+        body {
+            background-color: #202123;
+            min-height: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="css/chat.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gptMain: '#343541',
+                        gptSidebar: '#202123',
+                        gptInput: '#40414f',
+                        gptBorder: '#4d4d4f',
+                        gptGreen: '#10a37f',
+                        gptHover: '#2A2B32',
+                        gptBlue: '#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="flex h-screen overflow-hidden bg-gptMain text-gray-100 bg-[#202123]">
+
+    <aside class="w-64 bg-gptSidebar border-r border-gptBorder flex flex-col justify-between hidden md:flex">
+        <div>
+            <div class="p-6 flex items-center gap-2 text-xl font-bold text-white">
+                <img src="img/aurion.jpg" alt="AURION" class="w-8 h-8 rounded-lg object-cover">
+                <span>AURION</span>
+            </div>
+
+            <nav class="px-3 flex flex-col gap-2 mt-4">
+                <a href="chat.html" class="sidebar-item">
+                    <span class="sidebar-icon"><i class="fas fa-comment-alt"></i></span>
+                    <span class="sidebar-label">Chat</span>
+                </a>
+                <a href="bot.html" class="sidebar-item">
+                    <span class="sidebar-icon"><i class="fas fa-robot"></i></span>
+                    <span class="sidebar-label">BOT</span>
+                </a>
+                <a href="data.html" class="sidebar-item">
+                    <span class="sidebar-icon"><i class="fas fa-database"></i></span>
+                    <span class="sidebar-label">Data</span>
+                </a>
+                <a href="group.html" class="sidebar-item">
+                    <span class="sidebar-icon"><i class="fas fa-users"></i></span>
+                    <span class="sidebar-label">Group</span>
+                </a>
+                <a href="referral.html" class="sidebar-item">
+                    <span class="sidebar-icon"><i class="fas fa-gift"></i></span>
+                    <span class="sidebar-label">Referral</span>
+                </a>
+                <a href="subscription.html" class="sidebar-item active">
+                    <span class="sidebar-icon"><i class="fas fa-dollar-sign"></i></span>
+                    <span class="sidebar-label">Subscription</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="p-4">
+            <div class="bg-gptInput p-4 rounded-xl mb-4 border border-gray-600/50 shadow-lg">
+                <h3 class="font-bold text-white text-sm mb-1">Unlock 10+ Features</h3>
+                <p class="text-xs text-gray-400 mb-3">Web summary, email reply...</p>
+                <button
+                    class="w-full bg-gptGreen hover:opacity-90 text-white py-2 rounded-lg text-sm font-medium shadow-md transition flex items-center justify-center gap-2">
+                    <i class="fab fa-chrome"></i> Install now
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between text-gray-400 px-2 pt-2 border-t border-gray-700/50">
+                <i class="fas fa-user hover:text-white cursor-pointer text-lg transition" title="Tài khoản"></i>
+                <i class="fas fa-envelope hover:text-white cursor-pointer text-lg transition" title="Tin nhắn"></i>
+                <i class="fas fa-star hover:text-white cursor-pointer text-lg transition" title="Yêu thích"></i>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+
+        <header
+            class="h-14 border-b border-gray-600 flex items-center justify-between px-4 md:hidden bg-gptSidebar shrink-0">
+            <span class="font-bold text-white text-lg">Subscription</span>
+            <i class="fas fa-bars text-gray-300 text-lg cursor-pointer"></i>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 md:p-10">
+            <div class="max-w-3xl mx-auto w-full">
+
+                <h1 class="text-3xl font-bold text-white mb-8">Subscription</h1>
+
+                <div class="bg-gptInput border border-gray-600/50 rounded-2xl p-6 mb-6 shadow-lg">
+                    <h2 class="text-xl font-semibold text-white mb-6">Your Account</h2>
+
+                    <div class="relative mb-4">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" value="Trương Quang Huy" readonly
+                            class="w-full bg-black/20 border border-gray-600 text-gray-300 text-sm rounded-lg focus:ring-0 block pl-10 p-3 cursor-not-allowed">
+                    </div>
+
+                    <div class="relative mb-6">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-envelope text-gray-400"></i>
+                        </div>
+                        <input type="text" value="qnn********@gmail.com" readonly
+                            class="w-full bg-black/20 border border-gray-600 text-gray-300 text-sm rounded-lg focus:ring-0 block pl-10 p-3 cursor-not-allowed">
+                    </div>
+
+                    <button
+                        class="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/50 font-medium rounded-lg text-sm px-5 py-3 text-center transition">
+                        Change Password
+                    </button>
+                </div>
+
+                <div
+                    class="bg-gptInput border border-gray-600/50 rounded-2xl p-6 mb-6 shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
+
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl font-bold text-white">Basic</span>
+                        <i class="fas fa-arrow-circle-up text-blue-500 text-lg"></i>
+                    </div>
+
+                    <div class="text-center md:text-left flex-1 px-4">
+                        <div class="flex items-center justify-center md:justify-start gap-2 text-gray-400 text-sm mb-1">
+                            <i class="fas fa-plane-departure"></i>
+                            <span>Your current plan has <strong>0</strong> daily usage</span>
+                        </div>
+                        <div class="text-xs text-gray-500">Upgrade your plan to increase the limit.</div>
+                    </div>
+
+                    <button
+                        class="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition transform hover:-translate-y-0.5 flex items-center gap-2 whitespace-nowrap">
+                        <i class="fas fa-rocket"></i>
+                        AURION Pro
+                    </button>
+                </div>
+
+                <div class="bg-gptInput border border-gray-600/50 rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-semibold text-white mb-2">Token Usage</h2>
+                    <p class="text-sm text-gray-400 mb-6">
+                        We enforce token usage limits according to your plan. If you hit the cap, you have the option to
+                        upgrade to a higher plan or wait until the following day.
+                    </p>
+
+                    <div class="flex justify-between text-sm font-medium text-gray-300 mb-2">
+                        <span>Today</span>
+                        <span>Total</span>
+                    </div>
+
+                    <div class="w-full bg-gray-700 rounded-full h-2.5 mb-2 overflow-hidden">
+                        <div class="bg-blue-500 h-2.5 rounded-full" style="width: 2%"></div>
+                    </div>
+
+                    <div class="flex justify-between text-xs text-gray-500 mb-6">
+                        <span>0</span>
+                        <span>50</span>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button
+                            class="bg-gptBlue hover:bg-blue-600 text-white font-medium rounded-lg text-sm px-6 py-2.5 shadow-lg shadow-blue-500/20 transition">
+                            Redeem Gift
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const menuBtn = document.querySelector('.fa-bars');
+        const sidebar = document.querySelector('aside');
+
+        if (menuBtn && sidebar) {
+            menuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+                sidebar.classList.toggle('fixed');
+                sidebar.classList.toggle('inset-0');
+                sidebar.classList.toggle('z-50');
+                sidebar.classList.toggle('flex');
+            });
+        }
+    </script>
+</body>
+
+</html>

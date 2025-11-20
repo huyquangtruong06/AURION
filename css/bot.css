@@ -1,0 +1,44 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #343541; /* Màu nền dự phòng */
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #565869;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #acacbe;
+}
+
+/* Sidebar Items Styles */
+.sidebar-item {
+  @apply flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-[#2A2B32] hover:text-white rounded-lg cursor-pointer transition text-sm font-medium;
+  text-decoration: none; /* Xóa gạch chân thẻ a */
+}
+
+.sidebar-item.active {
+  @apply bg-[#2A2B32] text-white;
+}
+
+/* Animation cho hiệu ứng bông tuyết trang trí */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
