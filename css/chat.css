@@ -5,7 +5,6 @@ body {
   background-color: #343541;
 }
 
-/* Prevent layout shift when navigating between pages by keeping scrollbar space stable */
 html {
   overflow-y: scroll;
 }
@@ -90,7 +89,6 @@ body {
 }
 
 .sidebar-label {
-  /* Keep font weight consistent to avoid layout shift when toggling active state */
   font-weight: 600;
   color: inherit;
 }
