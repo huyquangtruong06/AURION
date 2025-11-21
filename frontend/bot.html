@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AURION - My Bots</title>
-    <link rel="icon" href="img/aurion.jpg">
+    <link rel="icon" href="/img/aurion.jpg">
 
     <style>
         :root {
@@ -20,7 +20,7 @@
         }
     </style>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="/css/chat.css">
     <style>
         html,
         body {
@@ -34,20 +34,19 @@
             theme: {
                 extend: {
                     colors: {
-                        gptMain: '#343541',      /* Nền chính */
-                        gptSidebar: '#202123',   /* Nền Sidebar */
-                        gptInput: '#40414f',     /* Nền Input/Card */
-                        gptBorder: '#4d4d4f',    /* Màu viền */
-                        gptGreen: '#10a37f',     /* Màu xanh lá (Install button) */
-                        gptHover: '#2A2B32',     /* Màu hover */
-                        gptBlue: '#3b82f6'       /* Màu xanh dương (Create button) */
+                        gptMain: '#343541',      /* main */
+                        gptSidebar: '#202123',   /*  Sidebar */
+                        gptInput: '#40414f',     /*  Input/Card */
+                        gptBorder: '#4d4d4f',    /*   */
+                        gptGreen: '#10a37f',     /*   (Install button) */
+                        gptHover: '#2A2B32',     /*  hover */
+                        gptBlue: '#3b82f6'       /* (Create button) */
                     }
                 }
             }
         }
     </script>
     <style>
-        /* Animation cho icon trạng thái trống */
         @keyframes float {
             0% {
                 transform: translateY(0px);
@@ -74,32 +73,32 @@
 
         <div>
             <div class="p-6 flex items-center gap-2 text-xl font-bold text-white">
-                <img src="img/aurion.jpg" alt="AURION" class="w-8 h-8 rounded-lg object-cover">
+                <img src="/img/aurion.jpg" alt="AURION" class="w-8 h-8 rounded-lg object-cover">
                 <span>AURION</span>
             </div>
 
             <nav class="px-3 flex flex-col gap-2 mt-4">
-                <a href="chat.html" class="sidebar-item">
+                <a href="/frontend/chat.html" class="sidebar-item">
                     <span class="sidebar-icon"><i class="fas fa-comment-alt"></i></span>
                     <span class="sidebar-label">Chat</span>
                 </a>
-                <a href="bot.html" class="sidebar-item active">
+                <a href="/frontend/bot.html" class="sidebar-item active">
                     <span class="sidebar-icon"><i class="fas fa-robot"></i></span>
                     <span class="sidebar-label">BOT</span>
                 </a>
-                <a href="data.html" class="sidebar-item">
+                <a href="/frontend/data.html" class="sidebar-item">
                     <span class="sidebar-icon"><i class="fas fa-database"></i></span>
                     <span class="sidebar-label">Data</span>
                 </a>
-                <a href="group.html" class="sidebar-item">
+                <a href="/frontend/group.html" class="sidebar-item">
                     <span class="sidebar-icon"><i class="fas fa-users"></i></span>
                     <span class="sidebar-label">Group</span>
                 </a>
-                <a href="referral.html" class="sidebar-item">
+                <a href="/frontend/referral.html" class="sidebar-item">
                     <span class="sidebar-icon"><i class="fas fa-gift"></i></span>
                     <span class="sidebar-label">Referral</span>
                 </a>
-                <a href="subscription.html" class="sidebar-item">
+                <a href="/frontend/subscription.html" class="sidebar-item">
                     <span class="sidebar-icon"><i class="fas fa-dollar-sign"></i></span>
                     <span class="sidebar-label">Subscription</span>
                 </a>
@@ -116,8 +115,22 @@
                 </button>
             </div>
 
-            <div class="flex items-center justify-between text-gray-400 px-2 pt-2 border-t border-gray-700/50">
-                <i class="fas fa-user hover:text-white cursor-pointer text-lg transition" title="Tài khoản"></i>
+            <div class="flex items-center justify-between text-gray-400 px-2 pt-2 border-t border-gray-700/50 relative">
+
+                <div class="relative">
+                    <div id="logoutPopup"
+                        class="hidden absolute bottom-full left-0 mb-2 w-32 bg-gptInput border border-gray-600 rounded-lg shadow-xl overflow-hidden z-50 animate-fade-in">
+                        <button onclick="handleLogout()"
+                            class="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gptHover hover:text-white transition flex items-center gap-2">
+                            <i class="fas fa-sign-out-alt"></i> Log Out
+                        </button>
+                    </div>
+
+                    <i id="userIcon" onclick="toggleLogoutPopup(event)"
+                        class="fas fa-user hover:text-white cursor-pointer text-lg transition p-1"
+                        title="Tài khoản"></i>
+                </div>
+
                 <i class="fas fa-envelope hover:text-white cursor-pointer text-lg transition" title="Tin nhắn"></i>
                 <i class="fas fa-star hover:text-white cursor-pointer text-lg transition" title="Yêu thích"></i>
             </div>
@@ -184,20 +197,8 @@
         </div>
     </main>
 
-    <script>
-        const menuBtn = document.querySelector('.fa-bars');
-        const sidebar = document.querySelector('aside');
 
-        if (menuBtn && sidebar) {
-            menuBtn.addEventListener('click', () => {
-                sidebar.classList.toggle('hidden');
-                sidebar.classList.toggle('fixed');
-                sidebar.classList.toggle('inset-0');
-                sidebar.classList.toggle('z-50');
-                sidebar.classList.toggle('flex');
-            });
-        }
-    </script>
+    <script src="/script/script.js"></script>
 </body>
 
 </html>

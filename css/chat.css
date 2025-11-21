@@ -1,14 +1,19 @@
-/* Import Font Inter */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
-/* === GLOBAL === */
 body {
   font-family: "Inter", sans-serif;
-  /* Màu nền dự phòng nếu Tailwind chưa load kịp */
   background-color: #343541;
 }
 
-/* === CUSTOM SCROLLBAR (Thanh cuộn tối màu) === */
+/* Prevent layout shift when navigating between pages by keeping scrollbar space stable */
+html {
+  overflow-y: scroll;
+}
+
+body {
+  scrollbar-gutter: stable;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -26,9 +31,6 @@ body {
   background: #acacbe;
 }
 
-/* === ANIMATIONS (Hiệu ứng trang trí) === */
-
-/* Hiệu ứng nhấp nháy (cho các ngôi sao/bông tuyết) */
 @keyframes pulse {
   0%,
   100% {
@@ -41,7 +43,6 @@ body {
   }
 }
 
-/* Hiệu ứng bay lơ lửng (cho icon ống nhòm trang Bot) */
 @keyframes float {
   0% {
     transform: translateY(0px);
@@ -58,7 +59,6 @@ body {
   animation: float 3s ease-in-out infinite;
 }
 
-/* === SIDEBAR STYLES === */
 .sidebar-item {
   display: flex;
   align-items: center;
@@ -90,10 +90,7 @@ body {
 }
 
 .sidebar-label {
-  font-weight: 500;
-  color: inherit;
-}
-
-.sidebar-item.active .sidebar-label {
+  /* Keep font weight consistent to avoid layout shift when toggling active state */
   font-weight: 600;
+  color: inherit;
 }

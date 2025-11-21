@@ -1,17 +1,14 @@
-/* Import Font Inter */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
-/* === GLOBAL SETTINGS === */
 body {
-  background-color: #343541; /* Màu nền chuẩn GPT */
+  background-color: #343541;
   font-family: "Inter", sans-serif;
   color: #ececf1;
 }
 .hidden {
   cursor: pointer;
 }
-/* === GRADIENT TEXT === */
-/* Tạo hiệu ứng chữ cầu vồng nhẹ nhàng hơn để hợp nền xám */
+
 .gradient-text {
   background: linear-gradient(to right, #60a5fa, #a78bfa, #f472b6);
   -webkit-background-clip: text;
@@ -20,7 +17,6 @@ body {
   font-weight: 800;
 }
 
-/* === CUSTOM SCROLLBAR === */
 ::-webkit-scrollbar {
   width: 8px;
 }

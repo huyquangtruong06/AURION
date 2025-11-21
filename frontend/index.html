@@ -7,7 +7,7 @@
     <title>AURION - AI Assistant</title>
     <link rel="icon" href="img/aurion.jpg">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="/css/index.css">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -30,6 +30,9 @@
 </head>
 
 <body class="text-gray-100 h-screen flex flex-col bg-gptMain overflow-x-hidden font-sans">
+    <script>
+        try { sessionStorage.setItem('prev_was_index', '1'); } catch (e) { }
+    </script>
 
     <!-- 1. MODAL REGISTER (ĐÃ THÊM NÚT X) -->
     <div id="registerModal"
@@ -117,11 +120,11 @@
             </div>
 
             <div class="hidden md:flex gap-8 text-gray-300 text-sm font-medium">
-                <a href="chat.html" class="hover:text-white transition">Chat</a>
-                <a href="bot.html" class="hover:text-white transition">BOT</a>
-                <a href="data.html" class="hover:text-white transition">Data</a>
-                <a href="group.html" class="hover:text-white transition">Group</a>
-                <a href="subscription.html" class="hover:text-white transition">Pricing</a>
+                <a href="\frontend\chat.html" class="hover:text-white transition">Chat</a>
+                <a href="\frontend\bot.html" class="hover:text-white transition">BOT</a>
+                <a href="\frontend\data.html" class="hover:text-white transition">Data</a>
+                <a href="\frontend\group.html" class="hover:text-white transition">Group</a>
+                <a href="\frontend\subscription.html" class="hover:text-white transition">Pricing</a>
             </div>
 
             <div class="flex items-center gap-3">
@@ -229,117 +232,7 @@
         }
     </style>
 
-    <script>
-        // Mở Modal
-        function openRegister() {
-            closeLogin(); // Đảm bảo tắt login trước
-            document.getElementById("registerModal").classList.remove("hidden");
-        }
-        function openLogin() {
-            closeRegister(); // Đảm bảo tắt register trước
-            document.getElementById("loginModal").classList.remove("hidden");
-        }
-
-        // Đóng Modal (Nút X gọi hàm này)
-        function closeRegister() {
-            document.getElementById("registerModal").classList.add("hidden");
-        }
-        function closeLogin() {
-            document.getElementById("loginModal").classList.add("hidden");
-        }
-
-        // Chuyển đổi nhanh giữa 2 modal (Link "Sign up" / "Log in" nhỏ ở dưới)
-        function switchModal(target) {
-            if (target === 'login') {
-                closeRegister();
-                openLogin();
-            } else {
-                closeLogin();
-                openRegister();
-            }
-        }
-
-        // Logic Submit (Giữ nguyên logic cũ của bạn)
-        async function submitRegister() {
-            let email = document.getElementById("reg_email").value.trim();
-            let password = document.getElementById("reg_password").value.trim();
-
-            if (!email || !password) {
-                alert("Vui lòng nhập đầy đủ email và mật khẩu!");
-                return;
-            }
-
-            try {
-                let res = await fetch("/auth/register", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password })
-                });
-
-                let data = await res.json();
-
-                if (data.status === "success") {
-                    // Ẩn modal
-                    closeRegister();
-
-                    // Chuyển trang ngay lập tức
-                    window.location.href = "chat.html";
-                } else {
-                    alert(data.message);
-                }
-            } catch (err) {
-                alert("Lỗi kết nối server! Kiểm tra backend của bạn.");
-                console.error(err);
-            }
-        }
-
-
-        async function submitLogin() {
-            let email = document.getElementById("log_email").value.trim();
-            let password = document.getElementById("log_password").value.trim();
-
-            if (!email || !password) {
-                alert("Vui lòng nhập email và mật khẩu!");
-                return;
-            }
-
-            try {
-                let res = await fetch("/auth/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password })
-                });
-
-                let data = await res.json();
-
-                if (data.status === "success") {
-                    localStorage.setItem("session_token", data.session_token);
-
-                    closeLogin();
-
-                    window.location.href = "chat.html";
-                } else {
-                    alert(data.message);
-                }
-            } catch (err) {
-                alert("Không thể kết nối server.");
-                console.error(err);
-            }
-        }
-
-
-        // Đóng modal khi click ra ngoài vùng nội dung (Optional UX)
-        window.onclick = function (event) {
-            let regModal = document.getElementById("registerModal");
-            let logModal = document.getElementById("loginModal");
-            if (event.target == regModal) {
-                closeRegister();
-            }
-            if (event.target == logModal) {
-                closeLogin();
-            }
-        }
-    </script>
+    <script src="/script/script.js"></script>
 </body>
 
 </html>

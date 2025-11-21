@@ -1,6 +1,6 @@
 from sqlalchemy.orm import declarative_base, mapped_column
 from sqlalchemy import String, DateTime, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID # Import UUID của Postgres
+from sqlalchemy.dialects.postgresql import UUID 
 from datetime import datetime
 import uuid
 
@@ -9,7 +9,6 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = "users"
     
-    # SỬA: Đổi Integer -> UUID để khớp với Database
     id = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     email = mapped_column(String, unique=True, nullable=False)
