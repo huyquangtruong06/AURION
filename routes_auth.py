@@ -15,7 +15,7 @@ async def register(data: dict, db: AsyncSession = Depends(get_db)):
 
     query = await db.execute(select(User).where(User.email == email))
     if query.scalar():
-        return {"status": "error", "message": "Email đã tồn tại"}
+        return {"status": "error", "message": "Email exists"}
 
     new_user = User(
         email=email,
@@ -36,7 +36,7 @@ async def login(data: dict, db: AsyncSession = Depends(get_db)):
     user = query.scalar()
 
     if not user or not bcrypt.verify(password, user.password_hash):
-        return {"status": "error", "message": "Sai email hoặc mật khẩu"}
+        return {"status": "error", "message": "Incorrect email or password"}
 
     raw_token = secrets.token_hex(32) 
     

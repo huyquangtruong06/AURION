@@ -33,7 +33,7 @@ async def read_root():
     if os.path.exists(frontend_index):
         return FileResponse(frontend_index)
 
-    return {"message": "Không tìm thấy file index.html"}
+    return {"message": "Do not find file index.html"}
 
 
 # API TEST DATABASE 
@@ -45,7 +45,7 @@ async def test_db_connection(db=Depends(get_db)):
 
         return {
             "status": "success",
-            "message": "Kết nối PostgreSQL thành công!",
+            "message": "PostgreSQL connection successful!",
             "user_count": count
         }
     except Exception as e:
