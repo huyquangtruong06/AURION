@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURION - AI Assistant</title>
+    <title>AI-CaaS - AI Assistant</title>
     <link rel="icon" href="img/aurion.jpg">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/index.css">
@@ -34,13 +34,10 @@
         try { sessionStorage.setItem('prev_was_index', '1'); } catch (e) { }
     </script>
 
-    <!-- 1. MODAL REGISTER (ĐÃ THÊM NÚT X) -->
     <div id="registerModal"
         class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] backdrop-blur-sm">
-        <!-- Thêm class 'relative' để định vị nút X -->
         <div class="bg-gptSidebar p-8 rounded-xl w-96 border border-gray-700 shadow-2xl relative animate-fade-in-up">
 
-            <!-- NÚT X (CLOSE) -->
             <button onclick="closeRegister()"
                 class="absolute top-4 right-4 text-gray-400 hover:text-white transition hover:rotate-90">
                 <i class="fas fa-times text-lg"></i>
@@ -73,13 +70,10 @@
         </div>
     </div>
 
-    <!-- 2. MODAL LOGIN (ĐÃ THÊM NÚT X) -->
     <div id="loginModal"
         class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] backdrop-blur-sm">
-        <!-- Thêm class 'relative' để định vị nút X -->
         <div class="bg-gptSidebar p-8 rounded-xl w-96 border border-gray-700 shadow-2xl relative animate-fade-in-up">
 
-            <!-- NÚT X (CLOSE) -->
             <button onclick="closeLogin()"
                 class="absolute top-4 right-4 text-gray-400 hover:text-white transition hover:rotate-90">
                 <i class="fas fa-times text-lg"></i>
@@ -116,7 +110,7 @@
         <div class="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto w-full">
             <div class="flex items-center gap-2 text-xl font-bold">
                 <img src="img/aurion.jpg" alt="AURION Logo" class="w-8 h-8 rounded-lg object-cover shadow-md">
-                <span>AURION</span>
+                <span>AI-CaaS</span>
             </div>
 
             <div class="hidden md:flex gap-8 text-gray-300 text-sm font-medium">
@@ -153,7 +147,7 @@
             <a href="chat.html"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gptInput border border-gray-600/50 text-sm text-gray-200 hover:bg-gptHover transition cursor-pointer shadow-sm">
                 <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Chat with AURION AI Now! <i class="fas fa-arrow-right text-xs ml-1"></i>
+                Chat with AI-CaaS AI Now! <i class="fas fa-arrow-right text-xs ml-1"></i>
             </a>
         </div>
 
@@ -164,12 +158,12 @@
         </h1>
 
         <p class="text-xl text-gray-300 mb-2 animate-fade-in-up" style="animation-delay: 0.2s;">
-            AURION: 1 cheaper price - All latest AI models
+            AI-CaaS: 1 cheaper price - All latest AI models
         </p>
 
         <p class="text-gray-400 max-w-2xl mb-10 text-sm leading-relaxed animate-fade-in-up"
             style="animation-delay: 0.3s;">
-            Stop overpaying for individual AI platforms - AURION gives you access to <br class="hidden md:block">
+            Stop overpaying for individual AI platforms - AI-CaaS gives you access to <br class="hidden md:block">
             all premium models at an unbeatable price, simplifying your workflow.
         </p>
 
