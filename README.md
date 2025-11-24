@@ -1,6 +1,6 @@
 # AI-CaaS Platform – README.md
 
-AURION (AI-CaaS Platform) is a **Chatbot-as-a-Service** system that enables users to build customized AI chatbots using their own documents and instructions — without coding. This README summarizes the system based on the official project plan, including technologies, architecture, scope, and development phases.
+AI-CaaS (AI-CaaS Platform) is a **Chatbot-as-a-Service** system that enables users to build customized AI chatbots using their own documents and instructions — without coding. This README summarizes the system based on the official project plan, including technologies, architecture, scope, and development phases.
 
 ---
 
