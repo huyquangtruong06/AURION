@@ -249,5 +249,4 @@ MIT License
 ---
 
 ## 🌟 Vision
-
 To democratize access to private, knowledge-aware AI systems — enabling anyone to deploy a powerful, personalized AI assistant with minimal effort.
