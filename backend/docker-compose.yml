@@ -1,0 +1,14 @@
+services:
+  db:
+    image: ankane/pgvector:latest # Image này đã có sẵn Postgres + Vector extension
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: aicaas_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

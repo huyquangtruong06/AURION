@@ -1,0 +1,11 @@
+# Bỏ qua thư mục venv (dù nó nằm ở đâu)
+venv/
+backend/venv/
+
+# Bỏ qua file môi trường
+.env
+backend/.env
+
+# Bỏ qua file rác Python
+__pycache__/
+*.pyc
