@@ -152,10 +152,20 @@ try {
 // index.html uses these functions
 function openRegister() {
   closeLogin();
+  const errorDiv = document.getElementById("reg_error");
+  if (errorDiv) {
+      errorDiv.classList.add("hidden");
+      errorDiv.innerText = "";
+  }
   document.getElementById("registerModal").classList.remove("hidden");
 }
 function openLogin() {
   closeRegister();
+  const errorDiv = document.getElementById("log_error");
+  if (errorDiv) {
+      errorDiv.classList.add("hidden");
+      errorDiv.innerText = "";
+  }
   document.getElementById("loginModal").classList.remove("hidden");
 }
 
@@ -179,9 +189,19 @@ function switchModal(target) {
 async function submitRegister() {
   let email = document.getElementById("reg_email").value.trim();
   let password = document.getElementById("reg_password").value.trim();
+  let errorDiv = document.getElementById("reg_error"); // Lấy thẻ div lỗi
+
+  // Reset lỗi trước khi chạy
+  if (errorDiv) {
+      errorDiv.classList.add("hidden");
+      errorDiv.innerText = "";
+  }
 
   if (!email || !password) {
-    alert("Vui lòng nhập đầy đủ email và mật khẩu!");
+    if (errorDiv) {
+        errorDiv.innerText = "Vui lòng nhập đầy đủ email và mật khẩu!";
+        errorDiv.classList.remove("hidden");
+    }
     return;
   }
 
@@ -196,23 +216,38 @@ async function submitRegister() {
 
     if (data.status === "success") {
       closeRegister();
-
       window.location.href = "chat.html";
     } else {
-      alert(data.message);
+      // HIỂN THỊ LỖI LÊN FORM (THAY VÌ ALERT)
+      if (errorDiv) {
+          errorDiv.innerText = data.message;
+          errorDiv.classList.remove("hidden");
+      }
     }
   } catch (err) {
-    alert("Lỗi kết nối server! Kiểm tra backend của bạn.");
     console.error(err);
+    if (errorDiv) {
+        errorDiv.innerText = "Lỗi kết nối server! Kiểm tra backend của bạn.";
+        errorDiv.classList.remove("hidden");
+    }
   }
 }
 
 async function submitLogin() {
   let email = document.getElementById("log_email").value.trim();
   let password = document.getElementById("log_password").value.trim();
+  let errorDiv = document.getElementById("log_error"); 
+
+  if (errorDiv) {
+      errorDiv.classList.add("hidden");
+      errorDiv.innerText = "";
+  }
 
   if (!email || !password) {
-    alert("Vui lòng nhập email và mật khẩu!");
+    if (errorDiv) {
+        errorDiv.innerText = "Vui lòng nhập email và mật khẩu!";
+        errorDiv.classList.remove("hidden");
+    }
     return;
   }
 
@@ -232,14 +267,19 @@ async function submitLogin() {
       } catch (e) {}
 
       closeLogin();
-
       window.location.href = "chat.html";
     } else {
-      alert(data.message);
+      if (errorDiv) {
+          errorDiv.innerText = data.message;
+          errorDiv.classList.remove("hidden");
+      }
     }
   } catch (err) {
-    alert("Không thể kết nối server.");
     console.error(err);
+    if (errorDiv) {
+        errorDiv.innerText = "Không thể kết nối server.";
+        errorDiv.classList.remove("hidden");
+    }
   }
 }
 
