@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from contextlib import asynccontextmanager
 
-DATABASE_URL = "postgresql+asyncpg://postgres:123456789@localhost:5432/database_app"
+DATABASE_URL = "postgresql+asyncpg://neondb_owner:npg_Hm5wARG8nODQ@ep-cold-sun-a1xplpet-pooler.ap-southeast-1.aws.neon.tech/neondb?ssl=require"
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 
