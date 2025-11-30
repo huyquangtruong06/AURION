@@ -58,7 +58,6 @@ async def login(data: dict, db: AsyncSession = Depends(get_db)):
         "session_token": raw_token  
     }
 
-
 @router.post("/logout")
 async def logout(data: dict, db: AsyncSession = Depends(get_db)):
     raw_token = data.get("session_token")

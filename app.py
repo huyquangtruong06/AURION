@@ -35,7 +35,6 @@ async def read_root():
 
     return {"message": "Do not find file index.html"}
 
-
 # API TEST DATABASE 
 @app.get("/api/test-db")
 async def test_db_connection(db=Depends(get_db)):
