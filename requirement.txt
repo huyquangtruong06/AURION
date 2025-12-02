@@ -1,3 +1,4 @@
 sqlalchemy asyncpg
 passlib[bcrypt]
 aiofiles
+asyncpg
