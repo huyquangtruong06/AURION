@@ -1,4 +1,6 @@
-sqlalchemy asyncpg
+sqlalchemy
 passlib[bcrypt]
 aiofiles
 asyncpg
+PyJWT
+python-dotenv

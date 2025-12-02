@@ -3,6 +3,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from contextlib import asynccontextmanager
 
+# JWT Configuration
+SECRET_KEY = "bi_mat_khong_bat_mi_12345"
 DATABASE_URL = "postgresql+asyncpg://neondb_owner:npg_Hm5wARG8nODQ@ep-cold-sun-a1xplpet-pooler.ap-southeast-1.aws.neon.tech/neondb?ssl=require"
 
 engine = create_async_engine(DATABASE_URL, echo=False)

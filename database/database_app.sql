@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
   refresh_token_hash TEXT NOT NULL,
+  access_token_jti TEXT,
   user_agent TEXT,
   ip_address INET,
 
@@ -126,5 +127,6 @@ BEGIN
   GET DIAGNOSTICS deleted_count = ROW_COUNT;
   RETURN deleted_count;
 END;
+
 
 $$ LANGUAGE plpgsql;

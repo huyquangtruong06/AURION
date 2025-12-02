@@ -32,6 +32,7 @@ class Session(Base):
     user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
     refresh_token_hash = mapped_column(String, nullable=False)
+    access_token_jti = mapped_column(String, nullable=True)  # JWT ID for tracking
     
     user_agent = mapped_column(String, nullable=True)
     ip_address = mapped_column(INET, nullable=True)

@@ -70,6 +70,7 @@ document.addEventListener("click", function (event) {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+  setupTokenRefresh();
   try {
     const icon = document.getElementById("userIcon");
     if (icon) {
@@ -79,17 +80,25 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function handleLogout() {
-  const token = localStorage.getItem("session_token");
-  if (token) {
+  const accessToken = localStorage.getItem("access_token");
+  const refreshToken = localStorage.getItem("refresh_token");
+  
+  if (accessToken || refreshToken) {
     fetch("/auth/logout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_token: token }),
+      body: JSON.stringify({ 
+        access_token: accessToken,
+        refresh_token: refreshToken 
+      }),
     }).catch(() => {});
   }
 
   try {
-    localStorage.removeItem("session_token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("token_expires_in");
+    localStorage.removeItem("token_expires_at");
   } catch (e) {}
   try {
     sessionStorage.removeItem("from_index");
@@ -261,7 +270,14 @@ async function submitLogin() {
     let data = await res.json();
 
     if (data.status === "success") {
-      localStorage.setItem("session_token", data.session_token);
+      // Lưu cả access token và refresh token
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+      localStorage.setItem("token_expires_in", data.expires_in);
+      
+      // Tính toán thời gian hết hạn
+      const expiresAt = Date.now() + (data.expires_in * 1000);
+      localStorage.setItem("token_expires_at", expiresAt);
       try {
         sessionStorage.setItem("from_index", "1");
       } catch (e) {}
@@ -293,3 +309,43 @@ window.onclick = function (event) {
     closeLogin();
   }
 };
+
+// Token refresh automation
+function setupTokenRefresh() {
+  const checkInterval = setInterval(() => {
+    const expiresAt = localStorage.getItem("token_expires_at");
+    const now = Date.now();
+    
+    // Refresh khi còn 2 phút trước khi hết hạn
+    if (expiresAt && (expiresAt - now) < (2 * 60 * 1000)) {
+      refreshAccessToken();
+    }
+  }, 30000); // Check mỗi 30 giây
+}
+
+async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem("refresh_token");
+  
+  if (!refreshToken) return;
+  
+  try {
+    let res = await fetch("/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    let data = await res.json();
+    
+    if (data.status === "success") {
+      localStorage.setItem("access_token", data.access_token);
+      const expiresAt = Date.now() + (data.expires_in * 1000);
+      localStorage.setItem("token_expires_at", expiresAt);
+    } else {
+      // Refresh token hết hạn, logout
+      handleLogout();
+    }
+  } catch (err) {
+    console.error("Token refresh error:", err);
+  }
+}
