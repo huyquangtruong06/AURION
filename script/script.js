@@ -1,295 +1,373 @@
-const menuBtn = document.querySelector(".fa-bars");
-const sidebar = document.querySelector("aside");
+/* ==========================================================================
+   PHẦN 1: CÁC HÀM HỖ TRỢ GIAO DIỆN (UI UTILS) - (GIỮ NGUYÊN)
+   ========================================================================== */
 
-if (menuBtn && sidebar) {
-  menuBtn.addEventListener("click", () => {
-    sidebar.classList.toggle("hidden");
-    sidebar.classList.toggle("fixed");
-    sidebar.classList.toggle("inset-0");
-    sidebar.classList.toggle("z-50");
-    sidebar.classList.toggle("flex");
-  });
+// 1.1. Hiển thị thông báo dạng dòng chữ (Inline)
+function showInlineMessage(elementId, message, type = 'error') {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    el.innerText = message;
+    el.classList.remove('hidden');
+    
+    el.classList.remove('text-red-500', 'text-green-500');
+    if (type === 'success') {
+        el.classList.add('text-green-500');
+    } else {
+        el.classList.add('text-red-500');
+    }
 }
 
-(() => {
-  try {
-    const links = document.querySelectorAll("aside nav a.sidebar-item");
-    if (!links || links.length === 0) return;
+// 1.2. Hiển thị Toast (Thông báo trượt)
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) { alert(message); return; }
 
-    const currentPath = window.location.pathname;
-
-    const normalize = (href) => {
-      try {
-        return new URL(href, window.location.origin).pathname;
-      } catch (e) {
-        return href;
-      }
+    const config = {
+        success: { icon: '<i class="fas fa-check-circle text-green-400"></i>', border: 'border-green-500/50' },
+        error: { icon: '<i class="fas fa-times-circle text-red-400"></i>', border: 'border-red-500/50' },
+        info: { icon: '<i class="fas fa-info-circle text-blue-400"></i>', border: 'border-blue-500/50' }
     };
+    const style = config[type] || config.success;
 
-    links.forEach((a) => {
-      const aPath = normalize(a.getAttribute("href"));
-      if (
-        aPath === currentPath ||
-        (aPath.endsWith("/") === false && currentPath.endsWith(aPath))
-      ) {
-        a.classList.add("active");
-      } else {
-        a.classList.remove("active");
-      }
-
-      a.addEventListener("click", () => {
-        links.forEach((x) => x.classList.remove("active"));
-        a.classList.add("active");
-      });
-    });
-  } catch (err) {
-    console.error("sidebar active toggle error", err);
-  }
-})();
-
-function toggleLogoutPopup(event) {
-  if (event && event.stopPropagation) event.stopPropagation();
-  const popup = document.getElementById("logoutPopup");
-  if (!popup) return;
-  popup.classList.toggle("hidden");
+    const toast = document.createElement('div');
+    toast.className = `toast-enter pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border ${style.border} bg-[#202123] shadow-2xl min-w-[300px] z-[999999]`;
+    toast.innerHTML = `
+        <div class="text-xl">${style.icon}</div>
+        <p class="text-sm text-gray-200 font-medium">${message}</p>
+    `;
+    
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.remove('toast-enter');
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
-document.addEventListener("click", function (event) {
-  const popup = document.getElementById("logoutPopup");
-  const icon = document.getElementById("userIcon");
+// 1.3. Modal Xác nhận Xóa
+let deleteAction = null;
 
-  if (!popup) return;
+function openConfirmModal(action) {
+    deleteAction = action;
+    const modal = document.getElementById('confirmModal');
+    if (modal) modal.classList.remove('hidden');
+}
 
-  if (
-    !popup.classList.contains("hidden") &&
-    !popup.contains(event.target) &&
-    event.target !== icon
-  ) {
-    popup.classList.add("hidden");
-  }
+function closeConfirmModal() {
+    const modal = document.getElementById('confirmModal');
+    if (modal) modal.classList.add('hidden');
+    deleteAction = null;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('confirmDeleteBtn');
+    if (btn) {
+        btn.onclick = () => { 
+            if(deleteAction) deleteAction(); 
+            closeConfirmModal(); 
+        };
+    }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  try {
-    const icon = document.getElementById("userIcon");
-    if (icon) {
-      icon.style.cursor = "pointer";
-    }
-  } catch (e) {}
-});
 
-function handleLogout() {
-  const token = localStorage.getItem("session_token");
-  if (token) {
-    fetch("/auth/logout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_token: token }),
-    }).catch(() => {});
-  }
+/* ==========================================================================
+   PHẦN 2: XÁC THỰC (AUTHENTICATION) - (GIỮ NGUYÊN)
+   ========================================================================== */
 
-  try {
-    localStorage.removeItem("session_token");
-  } catch (e) {}
-  try {
-    sessionStorage.removeItem("from_index");
-  } catch (e) {}
+function openLogin() { 
+    document.getElementById('loginModal').classList.remove('hidden'); 
+    const err = document.getElementById('log_error');
+    if(err) err.classList.add('hidden'); 
+}
+function closeLogin() { document.getElementById('loginModal').classList.add('hidden'); }
 
-  window.location.href = "/";
+function openRegister() { 
+    document.getElementById('registerModal').classList.remove('hidden'); 
+    const err = document.getElementById('reg_error');
+    if(err) err.classList.add('hidden'); 
+}
+function closeRegister() { document.getElementById('registerModal').classList.add('hidden'); }
+
+function switchModal(type) {
+    if (type === 'login') { closeRegister(); openLogin(); } 
+    else { closeLogin(); openRegister(); }
 }
 
-(function blockBackToIndexIfPrevWasIndex() {
-  try {
-    const path = window.location.pathname || "";
-
-    const isIndex =
-      path === "/" ||
-      path.endsWith("/index.html") ||
-      path.endsWith("/frontend/index.html");
-    if (isIndex) {
-      try {
-        sessionStorage.setItem("prev_was_index", "1");
-      } catch (e) {}
-      return;
-    }
-
-    const ref = document.referrer || "";
-    let refPath = "";
-    try {
-      refPath = new URL(ref).pathname;
-    } catch (e) {
-      refPath = ref;
-    }
-    const refIsIndex =
-      refPath === "/" ||
-      refPath.endsWith("/index.html") ||
-      refPath.endsWith("/frontend/index.html");
-
-    const prevWasIndex = sessionStorage.getItem("prev_was_index") === "1";
-
-    if (!refIsIndex && !prevWasIndex) return;
-
-    try {
-      history.replaceState({ aurion_block_back: true }, "", location.href);
-      history.pushState({}, "", location.href);
-
-      window.addEventListener("popstate", function (e) {
-        try {
-          history.pushState({}, "", location.href);
-        } catch (ex) {}
-      });
-    } catch (err) {}
-  } catch (err) {
-    console.error("blockBackToIndex error", err);
-  }
-})();
-
-try {
-  window.toggleLogoutPopup = toggleLogoutPopup;
-  window.handleLogout = handleLogout;
-} catch (e) {}
-
-// index.html uses these functions
-function openRegister() {
-  closeLogin();
-  const errorDiv = document.getElementById("reg_error");
-  if (errorDiv) {
-      errorDiv.classList.add("hidden");
-      errorDiv.innerText = "";
-  }
-  document.getElementById("registerModal").classList.remove("hidden");
-}
-function openLogin() {
-  closeRegister();
-  const errorDiv = document.getElementById("log_error");
-  if (errorDiv) {
-      errorDiv.classList.add("hidden");
-      errorDiv.innerText = "";
-  }
-  document.getElementById("loginModal").classList.remove("hidden");
-}
-
-function closeRegister() {
-  document.getElementById("registerModal").classList.add("hidden");
-}
-function closeLogin() {
-  document.getElementById("loginModal").classList.add("hidden");
-}
-
-function switchModal(target) {
-  if (target === "login") {
-    closeRegister();
-    openLogin();
-  } else {
-    closeLogin();
-    openRegister();
-  }
-}
-
+// --- ĐĂNG KÝ ---
 async function submitRegister() {
-  let email = document.getElementById("reg_email").value.trim();
-  let password = document.getElementById("reg_password").value.trim();
-  let errorDiv = document.getElementById("reg_error"); // Lấy thẻ div lỗi
+    const email = document.getElementById('reg_email').value;
+    const password = document.getElementById('reg_password').value;
+    const errorDiv = 'reg_error';
 
-  // Reset lỗi trước khi chạy
-  if (errorDiv) {
-      errorDiv.classList.add("hidden");
-      errorDiv.innerText = "";
-  }
+    document.getElementById(errorDiv).classList.add('hidden');
 
-  if (!email || !password) {
-    if (errorDiv) {
-        errorDiv.innerText = "Vui lòng nhập đầy đủ email và mật khẩu!";
-        errorDiv.classList.remove("hidden");
+    if (!email || !password) {
+        showInlineMessage(errorDiv, "Please fill in all fields", "error");
+        return;
     }
-    return;
-  }
 
-  try {
-    let res = await fetch("/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    const btn = document.querySelector('#registerModal button');
+    const originalText = btn ? btn.innerHTML : 'Sign Up';
+    if(btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
 
-    let data = await res.json();
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, full_name: "User" })
+        });
+        const data = await response.json();
 
-    if (data.status === "success") {
-      closeRegister();
-      window.location.href = "chat.html";
-    } else {
-      // HIỂN THỊ LỖI LÊN FORM (THAY VÌ ALERT)
-      if (errorDiv) {
-          errorDiv.innerText = data.message;
-          errorDiv.classList.remove("hidden");
-      }
+        if (data.status === "success") {
+            showInlineMessage(errorDiv, "Đăng ký thành công! Đang chuyển...", "success");
+            setTimeout(() => switchModal('login'), 1500);
+        } else {
+            showInlineMessage(errorDiv, data.message || "Đăng ký thất bại", "error");
+        }
+    } catch (e) {
+        showInlineMessage(errorDiv, "Lỗi kết nối tới Server", "error");
+    } finally {
+        if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
     }
-  } catch (err) {
-    console.error(err);
-    if (errorDiv) {
-        errorDiv.innerText = "Lỗi kết nối server! Kiểm tra backend của bạn.";
-        errorDiv.classList.remove("hidden");
-    }
-  }
 }
 
+// --- ĐĂNG NHẬP ---
 async function submitLogin() {
-  let email = document.getElementById("log_email").value.trim();
-  let password = document.getElementById("log_password").value.trim();
-  let errorDiv = document.getElementById("log_error"); 
+    const email = document.getElementById('log_email').value;
+    const password = document.getElementById('log_password').value;
+    const errorDiv = 'log_error';
 
-  if (errorDiv) {
-      errorDiv.classList.add("hidden");
-      errorDiv.innerText = "";
-  }
+    document.getElementById(errorDiv).classList.add('hidden');
 
-  if (!email || !password) {
-    if (errorDiv) {
-        errorDiv.innerText = "Vui lòng nhập email và mật khẩu!";
-        errorDiv.classList.remove("hidden");
+    if (!email || !password) {
+        showInlineMessage(errorDiv, "Please fill in all fields", "error");
+        return;
     }
-    return;
-  }
 
-  try {
-    let res = await fetch("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    const btn = document.querySelector('#loginModal button');
+    const originalText = btn ? btn.innerHTML : 'Log In';
+    if(btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
 
-    let data = await res.json();
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await response.json();
 
-    if (data.status === "success") {
-      localStorage.setItem("session_token", data.session_token);
-      try {
-        sessionStorage.setItem("from_index", "1");
-      } catch (e) {}
-
-      closeLogin();
-      window.location.href = "chat.html";
-    } else {
-      if (errorDiv) {
-          errorDiv.innerText = data.message;
-          errorDiv.classList.remove("hidden");
-      }
+        if (data.status === "success") {
+            localStorage.setItem('session_token', data.session_token);
+            showInlineMessage(errorDiv, "Login Success!", "success");
+            setTimeout(() => window.location.href = data.redirect || "/frontend/chat.html", 1000);
+        } else {
+            showInlineMessage(errorDiv, data.message || "Invalid credentials", "error");
+        }
+    } catch (e) {
+        showInlineMessage(errorDiv, "Connection Error", "error");
+    } finally {
+        if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
     }
-  } catch (err) {
-    console.error(err);
-    if (errorDiv) {
-        errorDiv.innerText = "Không thể kết nối server.";
-        errorDiv.classList.remove("hidden");
-    }
-  }
 }
 
-window.onclick = function (event) {
-  let regModal = document.getElementById("registerModal");
-  let logModal = document.getElementById("loginModal");
-  if (event.target == regModal) {
-    closeRegister();
-  }
-  if (event.target == logModal) {
-    closeLogin();
-  }
-};
+// --- ĐĂNG XUẤT ---
+function toggleLogoutPopup(e) { e.stopPropagation(); document.getElementById('logoutPopup').classList.toggle('hidden'); }
+document.addEventListener('click', (e) => {
+    const p = document.getElementById('logoutPopup');
+    if (p && !p.classList.contains('hidden') && !p.contains(e.target) && e.target.id !== 'userIcon') p.classList.add('hidden');
+});
+
+async function handleLogout() {
+    const token = localStorage.getItem('session_token');
+    if(token) {
+        try { await fetch('/api/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({session_token: token}) }); } catch (e) {}
+    }
+    localStorage.removeItem('session_token');
+    showToast("Logged out successfully", "success");
+    setTimeout(() => window.location.href = "/", 1000);
+}
+
+
+/* ==========================================================================
+   PHẦN 3: QUẢN LÝ BOT (BOT MANAGER)
+   ========================================================================== */
+
+function toggleBotModal() { document.getElementById('botModal').classList.toggle('hidden'); }
+
+// Tạo Bot
+async function handleCreateBot(event) {
+    event.preventDefault();
+    const btn = event.target.querySelector('button[type="submit"]');
+    btn.innerHTML = 'Creating...'; btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/bots/create', { method: 'POST', body: new FormData(event.target) });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast("Tạo Bot thành công!", "success");
+            toggleBotModal();
+            event.target.reset();
+            loadBots();
+        } else { 
+            showToast(data.message, "error"); 
+        }
+    } catch (e) { showToast("Lỗi hệ thống", "error"); }
+    finally { btn.innerHTML = 'Create Bot'; btn.disabled = false; }
+}
+
+// Load Bot - [CẬP NHẬT]: Nút Chat giờ chuyển hướng kèm ID
+async function loadBots() {
+    const container = document.getElementById('botListContainer');
+    const empty = document.getElementById('emptyBotState');
+    if (!container) return;
+
+    try {
+        const res = await fetch('/api/bots');
+        const data = await res.json();
+        if (data.status === 'success' && data.data.length > 0) {
+            empty.classList.add('hidden');
+            container.innerHTML = data.data.map(bot => `
+                <div class="bg-gptInput border border-gray-600 rounded-xl p-6 hover:border-gray-500 transition shadow-lg relative group flex flex-col justify-between">
+                    <button onclick="reqDeleteBot('${bot.id}')" class="absolute top-4 right-4 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-2"><i class="fas fa-trash"></i></button>
+                    
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center text-blue-400"><i class="fas fa-robot"></i></div>
+                        <div>
+                            <h3 class="font-bold text-white truncate max-w-[150px]">${bot.name}</h3>
+                            <p class="text-xs text-gray-500">${new Date(bot.created_at).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    
+                    <p class="text-gray-400 text-sm mb-4 line-clamp-2 h-10 overflow-hidden">${bot.description || 'No description'}</p>
+                    
+                    <a href="/frontend/chat.html?botId=${bot.id}" class="block w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-gray-200 transition text-center">
+                        <i class="fas fa-comment-alt mr-2"></i> Chat now
+                    </a>
+                </div>`).join('');
+        } else { container.innerHTML = ''; empty.classList.remove('hidden'); }
+    } catch (e) { console.error(e); }
+}
+
+// Xóa Bot
+function reqDeleteBot(id) { openConfirmModal(() => deleteItem(`/api/bots/${id}`, loadBots)); }
+
+
+/* ==========================================================================
+   PHẦN 4: QUẢN LÝ KNOWLEDGE (DATA MANAGER)
+   ========================================================================== */
+
+function toggleUploadModal() { document.getElementById('uploadModal').classList.toggle('hidden'); }
+
+function showFileName(input) {
+    if (input.files[0]) {
+        document.getElementById('fileNameDisplay').textContent = input.files[0].name;
+        document.getElementById('filePreview').classList.remove('hidden');
+    }
+}
+
+// [MỚI] Tải danh sách Bot vào Dropdown trong Modal Upload
+async function loadBotsForDropdown() {
+    const select = document.getElementById('botSelectDropdown');
+    if (!select) return; // Nếu không có dropdown thì thoát (trang khác)
+
+    try {
+        const res = await fetch('/api/bots');
+        const data = await res.json();
+        
+        // Reset lại dropdown, giữ option đầu tiên
+        select.innerHTML = '<option value="">-- General (All Bots) --</option>';
+        
+        if (data.status === 'success' && data.data) {
+            data.data.forEach(bot => {
+                const option = document.createElement("option");
+                option.value = bot.id;
+                option.textContent = bot.name;
+                select.appendChild(option);
+            });
+        }
+    } catch (e) { console.error("Lỗi tải bot list:", e); }
+}
+
+// Upload File
+async function handleUpload(event) {
+    event.preventDefault();
+    const btn = event.target.querySelector('button[type="submit"]');
+    btn.innerHTML = 'Uploading...'; btn.disabled = true;
+
+    try {
+        // FormData sẽ tự động lấy cả file và bot_id từ thẻ <select> trong form
+        const res = await fetch('/api/knowledge/upload', { method: 'POST', body: new FormData(event.target) });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast("Upload thành công!", "success");
+            toggleUploadModal();
+            event.target.reset();
+            document.getElementById('filePreview').classList.add('hidden');
+            loadKnowledge();
+        } else { showToast(data.message, "error"); }
+    } catch (e) { showToast("Lỗi upload", "error"); }
+    finally { btn.innerHTML = 'Start Upload'; btn.disabled = false; }
+}
+
+// Load Knowledge
+async function loadKnowledge() {
+    const tbody = document.getElementById('knowledgeListBody');
+    const table = document.getElementById('knowledgeTable');
+    const empty = document.getElementById('emptyDataState');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('/api/knowledge');
+        const data = await res.json();
+        if (data.status === 'success' && data.data.length > 0) {
+            empty.classList.add('hidden'); table.classList.remove('hidden');
+            tbody.innerHTML = data.data.map(f => `
+                <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td class="px-6 py-4 text-white flex flex-col gap-1">
+                        <div class="flex items-center gap-2"><i class="fas fa-file"></i> ${f.filename}</div>
+                        ${f.bot_id ? '<span class="text-[10px] text-blue-400 border border-blue-500/30 rounded px-1 w-fit bg-blue-900/20">Bot Specific</span>' : '<span class="text-[10px] text-gray-500 border border-gray-600 rounded px-1 w-fit">General</span>'}
+                    </td>
+                    <td class="px-6 py-4 text-gray-400">${f.file_size}</td>
+                    <td class="px-6 py-4 text-gray-500">${new Date(f.created_at).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="reqDeleteFile('${f.id}')" class="text-gray-500 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+        } else { table.classList.add('hidden'); empty.classList.remove('hidden'); }
+    } catch (e) { console.error(e); }
+}
+
+// Xóa File
+function reqDeleteFile(id) { openConfirmModal(() => deleteItem(`/api/knowledge/${id}`, loadKnowledge)); }
+
+
+/* ==========================================================================
+   PHẦN 5: CHỨC NĂNG CHUNG (XÓA & KHỞI TẠO)
+   ========================================================================== */
+
+// Hàm xóa chung cho cả Bot và File
+async function deleteItem(url, reloadCallback) {
+    try {
+        const res = await fetch(url, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.status === 'success') { 
+            showToast("Đã xóa thành công!", "success"); 
+            reloadCallback(); 
+        } else { 
+            showToast(data.message, "error"); 
+        }
+    } catch (e) { showToast("Lỗi khi xóa", "error"); }
+}
+
+// Tự động chạy khi tải trang
+document.addEventListener('DOMContentLoaded', () => {
+    // Trang BOT
+    if (document.getElementById('botListContainer')) loadBots();
+    
+    // Trang DATA
+    if (document.getElementById('knowledgeListBody')) {
+        loadKnowledge();
+        loadBotsForDropdown(); // [MỚI] Tải danh sách bot vào dropdown upload
+    }
+});
