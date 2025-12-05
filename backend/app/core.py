@@ -89,3 +89,4 @@ def ask_bot(question: str, bot_id: str):
     )
     
     return rag_chain.invoke(question)
+# Task ACP-26: Completed Vectorization with HuggingFace
