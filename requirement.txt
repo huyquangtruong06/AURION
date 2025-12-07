@@ -1,3 +1,20 @@
-sqlalchemy asyncpg
-passlib[bcrypt]
+fastapi>=0.111.0
+uvicorn
+gunicorn
+sqlalchemy
+asyncpg
+python-multipart
+python-jose[cryptography]
+passlib==1.7.4
+pydantic>=2.0.0
+pydantic-settings
+email-validator
+bcrypt==3.2.0
+python-dotenv
+requests
 aiofiles
+google-generativeai
+pypdf
+python-docx
+cloudinary
+pdfminer.six
