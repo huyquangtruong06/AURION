@@ -1,14 +1,22 @@
 <!DOCTYPE html>
-<html lang="vi" style="background-color: #343541;">
+<html lang="en" style="background-color: #343541;">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI-CaaS - AI Assistant</title>
-    <link rel="icon" href="img/aurion.jpg">
+    <link rel="icon" href="/img/aurion.jpg">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/index.css">
-
+    <style>
+    body {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+    }
+    body.page-loaded {
+        opacity: 1;
+    }
+    </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -30,13 +38,15 @@
 </head>
 
 <body class="text-gray-100 h-screen flex flex-col bg-gptMain overflow-x-hidden font-sans">
+    
+    <div id="toast-container" class="fixed top-24 right-5 z-[999999] flex flex-col gap-2 pointer-events-none"></div>
     <script>
         try { sessionStorage.setItem('prev_was_index', '1'); } catch (e) { }
     </script>
 
     <div id="registerModal"
-        class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] backdrop-blur-sm">
-        <div class="bg-gptSidebar p-8 rounded-xl w-96 border border-gray-700 shadow-2xl relative animate-fade-in-up">
+        class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] backdrop-blur-sm p-4">
+        <div class="bg-gptSidebar p-6 md:p-8 rounded-xl w-full max-w-sm border border-gray-700 shadow-2xl relative animate-fade-in-up">
 
             <button onclick="closeRegister()"
                 class="absolute top-4 right-4 text-gray-400 hover:text-white transition hover:rotate-90">
@@ -71,8 +81,8 @@
     </div>
 
     <div id="loginModal"
-        class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] backdrop-blur-sm">
-        <div class="bg-gptSidebar p-8 rounded-xl w-96 border border-gray-700 shadow-2xl relative animate-fade-in-up">
+        class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] backdrop-blur-sm p-4">
+        <div class="bg-gptSidebar p-6 md:p-8 rounded-xl w-full max-w-sm border border-gray-700 shadow-2xl relative animate-fade-in-up">
 
             <button onclick="closeLogin()"
                 class="absolute top-4 right-4 text-gray-400 hover:text-white transition hover:rotate-90">
@@ -100,85 +110,112 @@
             </button>
 
             <div class="mt-4 text-center text-sm text-gray-400">
+                <a href="#" onclick="switchModal('forgot')" class="text-gray-400 hover:text-white text-xs underline mb-2 block">Forgot Password?</a>
+                
                 Don't have an account? <a href="#" onclick="switchModal('register')"
                     class="text-blue-400 hover:underline">Sign up</a>
             </div>
         </div>
     </div>
 
+    <div id="forgotModal"
+        class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] backdrop-blur-sm p-4">
+        <div class="bg-gptSidebar p-6 md:p-8 rounded-xl w-full max-w-sm border border-gray-700 shadow-2xl relative animate-fade-in-up">
+
+            <button onclick="document.getElementById('forgotModal').classList.add('hidden')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white transition hover:rotate-90">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+
+            <h2 class="text-2xl font-bold mb-4 text-center">Reset Password</h2>
+
+            <div id="step1">
+                <p class="text-sm text-gray-400 mb-4 text-center">Enter your email to receive OTP code.</p>
+                <input id="fp_email" type="email" placeholder="name@example.com"
+                    class="w-full mt-1 p-3 bg-gptInput border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-white mb-4">
+                <button onclick="sendOTP()"
+                    class="w-full bg-gptBlue hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition shadow-lg">
+                    Send OTP
+                </button>
+            </div>
+
+            <div id="step2" class="hidden space-y-4">
+                <p class="text-sm text-green-400 mb-2 text-center">OTP sent!</p>
+                
+                <input id="fp_otp" type="text" placeholder="Enter 6-digit OTP"
+                    class="w-full p-3 bg-gptInput border border-gray-600 rounded-lg text-white text-center tracking-widest text-xl focus:ring-2 focus:ring-green-500 outline-none">
+                
+                <input id="fp_new_pass" type="password" placeholder="New Password"
+                    class="w-full p-3 bg-gptInput border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-green-500 outline-none">
+                
+                <button onclick="submitResetPass()"
+                    class="w-full bg-gptGreen hover:bg-green-600 text-white font-bold py-3 rounded-lg transition shadow-lg">
+                    Reset Password
+                </button>
+            </div>
+
+            <div id="fp_msg" class="text-center text-sm mt-3 hidden"></div>
+        </div>
+    </div>
+
     <nav class="fixed top-0 w-full z-50 bg-gptMain/80 backdrop-blur-md border-b border-white/5">
-        <div class="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto w-full">
-            <div class="flex items-center gap-2 text-xl font-bold">
-                <img src="img/aurion.jpg" alt="AURION Logo" class="w-8 h-8 rounded-lg object-cover shadow-md">
+        <div class="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 max-w-7xl mx-auto w-full">
+            <div class="flex items-center gap-2 text-lg md:text-xl font-bold">
+                <img src="/img/aurion.jpg" alt="AURION Logo" class="w-8 h-8 rounded-lg object-cover shadow-md">
                 <span>AI-CaaS</span>
             </div>
 
             <div class="hidden md:flex gap-8 text-gray-300 text-sm font-medium">
-                <a href="\frontend\chat.html" class="hover:text-white transition">Chat</a>
-                <a href="\frontend\bot.html" class="hover:text-white transition">BOT</a>
-                <a href="\frontend\data.html" class="hover:text-white transition">Data</a>
-                <a href="\frontend\group.html" class="hover:text-white transition">Group</a>
-                <a href="\frontend\subscription.html" class="hover:text-white transition">Pricing</a>
+                <a href="#" onclick="checkAuthAndNavigate('/frontend/chat.html'); return false;" 
+                class="hover:text-white transition">Chat</a>
+                
+                <a href="#" onclick="checkAuthAndNavigate('/frontend/bot.html'); return false;" 
+                class="hover:text-white transition">BOT</a>
+                
+                <a href="#" onclick="checkAuthAndNavigate('/frontend/data.html'); return false;" 
+                class="hover:text-white transition">Data</a>
+                
+                <a href="#" onclick="checkAuthAndNavigate('/frontend/group.html'); return false;" 
+                class="hover:text-white transition">Group</a>
+                
+                <a href="#" onclick="checkAuthAndNavigate('/frontend/subscription.html'); return false;" 
+                class="hover:text-white transition">Pricing</a>
             </div>
-
-            <div class="flex items-center gap-3">
+            
+            <div class="flex items-center gap-2 md:gap-3">
                 <a href="#" onclick="openLogin()"
-                    class="text-gray-300 hover:text-white font-medium text-sm px-4 py-2 border border-gray-600 rounded-lg hover:bg-gptInput transition">
+                    class="text-gray-300 hover:text-white font-medium text-xs md:text-sm px-3 py-2 md:px-4 md:py-2 border border-gray-600 rounded-lg hover:bg-gptInput transition">
                     Login
                 </a>
                 <a href="#" onclick="openRegister()"
-                    class="bg-white text-black hover:bg-gray-200 font-medium text-sm px-4 py-2 rounded-lg transition shadow-lg">
+                    class="bg-white text-black hover:bg-gray-200 font-medium text-xs md:text-sm px-3 py-2 md:px-4 md:py-2 rounded-lg transition shadow-lg">
                     Register
                 </a>
-                <button
-                    class="bg-gptBlue hover:bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-blue-500/20 hidden md:block">
-                    Add to Chrome
-                </button>
             </div>
         </div>
     </nav>
 
-    <main class="flex-1 flex flex-col items-center justify-center text-center px-4 pt-24 relative">
+    <main class="flex-1 flex flex-col items-center justify-center text-center px-4 pt-20 md:pt-24 relative w-full">
         <div
-            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] -z-10 pointer-events-none">
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] -z-10 pointer-events-none">
         </div>
-
-        <div class="mb-8 animate-fade-in-up">
-            <a href="chat.html"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gptInput border border-gray-600/50 text-sm text-gray-200 hover:bg-gptHover transition cursor-pointer shadow-sm">
-                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Chat with AI-CaaS AI Now! <i class="fas fa-arrow-right text-xs ml-1"></i>
-            </a>
-        </div>
-
-        <h1 class="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight animate-fade-in-up"
+        <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4 md:mb-6 tracking-tight animate-fade-in-up"
             style="animation-delay: 0.1s;">
             Why pay for <span class="gradient-text">Grok-3</span><br>
             to use only 1 model?
         </h1>
 
-        <p class="text-xl text-gray-300 mb-2 animate-fade-in-up" style="animation-delay: 0.2s;">
+        <p class="text-lg md:text-xl text-gray-300 mb-2 animate-fade-in-up" style="animation-delay: 0.2s;">
             AI-CaaS: 1 cheaper price - All latest AI models
         </p>
 
-        <p class="text-gray-400 max-w-2xl mb-10 text-sm leading-relaxed animate-fade-in-up"
+        <p class="text-gray-400 max-w-2xl mb-8 md:mb-10 text-xs md:text-sm leading-relaxed animate-fade-in-up px-4"
             style="animation-delay: 0.3s;">
             Stop overpaying for individual AI platforms - AI-CaaS gives you access to <br class="hidden md:block">
             all premium models at an unbeatable price, simplifying your workflow.
         </p>
 
-        <div class="flex flex-col md:flex-row gap-4 mb-20 animate-fade-in-up" style="animation-delay: 0.4s;">
-            <a href="chat.html"
-                class="bg-gptBlue hover:bg-blue-600 text-white px-8 py-3.5 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5">
-                <i class="fab fa-chrome"></i> Add to Chrome - It's free
-            </a>
-            <button
-                class="bg-gptInput hover:bg-gptHover text-white px-8 py-3.5 rounded-xl font-semibold transition border border-gray-600/50 flex items-center justify-center gap-2 hover:-translate-y-0.5">
-                <i class="fas fa-desktop"></i> Desktop & mobile app
-            </button>
-        </div>
-
-        <div class="w-full max-w-5xl mx-auto perspective-1000 animate-fade-in-up" style="animation-delay: 0.5s;">
+        <div class="w-full max-w-5xl mx-auto perspective-1000 animate-fade-in-up px-2" style="animation-delay: 0.5s;">
             <div
                 class="bg-gptSidebar border border-gray-600/50 rounded-t-2xl p-2 shadow-2xl opacity-80 transform rotate-x-10">
                 <div class="flex items-center gap-2 px-4 py-2 border-b border-gray-700/50 mb-2">
@@ -187,12 +224,12 @@
                         <div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
                         <div class="w-3 h-3 rounded-full bg-green-500/50"></div>
                     </div>
-                    <div class="ml-4 bg-gptInput rounded text-xs text-gray-400 px-3 py-1 w-64">aurion.ai/chat</div>
+                    <div class="ml-4 bg-gptInput rounded text-xs text-gray-400 px-3 py-1 w-full max-w-[200px] md:w-64 truncate">aurion.ai/chat</div>
                 </div>
-                <div class="h-32 bg-gptMain/50 rounded-lg flex items-center justify-center text-gray-600">
+                <div class="h-24 md:h-32 bg-gptMain/50 rounded-lg flex items-center justify-center text-gray-600">
                     <div class="flex flex-col items-center gap-2">
-                        <i class="fas fa-robot text-4xl opacity-20"></i>
-                        <span class="text-sm">App Preview</span>
+                        <i class="fas fa-robot text-3xl md:text-4xl opacity-20"></i>
+                        <span class="text-xs md:text-sm">App Preview</span>
                     </div>
                 </div>
             </div>
@@ -227,6 +264,92 @@
     </style>
 
     <script src="/script/script.js"></script>
+
+    <script>
+        // Modal toggle function
+        function switchModal(type) {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.getElementById('registerModal').classList.add('hidden');
+            document.getElementById('forgotModal').classList.add('hidden');
+            
+            if (type === 'login') document.getElementById('loginModal').classList.remove('hidden');
+            if (type === 'register') document.getElementById('registerModal').classList.remove('hidden');
+            if (type === 'forgot') {
+                document.getElementById('forgotModal').classList.remove('hidden');
+                document.getElementById('step1').classList.remove('hidden');
+                document.getElementById('step2').classList.add('hidden');
+                document.getElementById('fp_msg').classList.add('hidden');
+            }
+        }
+
+        // 1. Send OTP
+        async function sendOTP() {
+            const email = document.getElementById('fp_email').value;
+            const msg = document.getElementById('fp_msg');
+            
+            if(!email) {
+                msg.classList.remove('hidden');
+                msg.innerText = "Please enter your email.";
+                msg.className = "text-center text-sm mt-3 text-red-500";
+                return;
+            }
+            
+            msg.classList.remove('hidden'); 
+            msg.innerText = "Sending OTP..."; 
+            msg.className = "text-center text-sm mt-3 text-gray-400";
+
+            try {
+                const res = await fetch('/api/forgot-password', {
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('step1').classList.add('hidden');
+                    document.getElementById('step2').classList.remove('hidden');
+                    msg.classList.add('hidden');
+                } else {
+                    msg.innerText = data.message; 
+                    msg.className = "text-center text-sm mt-3 text-red-500";
+                }
+            } catch(e) { 
+                msg.innerText = "Error connecting to server"; 
+                msg.className = "text-center text-sm mt-3 text-red-500";
+            }
+        }
+
+        // 2. Reset Password
+        async function submitResetPass() {
+            const email = document.getElementById('fp_email').value;
+            const otp = document.getElementById('fp_otp').value;
+            const newPass = document.getElementById('fp_new_pass').value;
+            const msg = document.getElementById('fp_msg');
+
+            try {
+                const res = await fetch('/api/reset-password', {
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ email, otp, new_password: newPass })
+                });
+                const data = await res.json();
+                
+                msg.classList.remove('hidden');
+                if (data.status === 'success') {
+                    msg.innerText = "Password Reset Successful! Redirecting to login..."; 
+                    msg.className = "text-center text-sm mt-3 text-green-500";
+                    setTimeout(() => switchModal('login'), 2000);
+                } else { 
+                    msg.innerText = data.message; 
+                    msg.className = "text-center text-sm mt-3 text-red-500"; 
+                }
+            } catch(e) { 
+                msg.innerText = "Error connecting to server"; 
+                msg.className = "text-center text-sm mt-3 text-red-500";
+            }
+        }
+    </script>
 </body>
 
 </html>
