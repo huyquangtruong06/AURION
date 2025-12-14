@@ -5,7 +5,17 @@ from fastapi.responses import FileResponse
 from sqlalchemy import text
 import os
 from connect_database import lifespan, get_db
+from fastapi.middleware.cors import CORSMiddleware
+app = FastAPI(lifespan=lifespan)
 
+# Cho phép mọi nguồn (để nhúng bot vào web bất kỳ)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Import 2 routers
 from routes_auth import router as auth_router
 from routes_app import router as app_router

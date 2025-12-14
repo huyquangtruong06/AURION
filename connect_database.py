@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 import os
 
 # Import Base để biết cần tạo những bảng nào
-from models import Base 
+from models import Base, User, Session, Bot, KnowledgeBase 
 
 # URL Database của bạn
 DATABASE_URL = "postgresql+asyncpg://neondb_owner:npg_Hm5wARG8nODQ@ep-cold-sun-a1xplpet-pooler.ap-southeast-1.aws.neon.tech/neondb?ssl=require"
