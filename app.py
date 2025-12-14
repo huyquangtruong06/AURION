@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy import text
 import os
-from connect_database import lifespan, get_db
+from connect_database import lifespan, get_db, AsyncSessionLocal
 
 # Import 2 routers
 from routes_auth import router as auth_router

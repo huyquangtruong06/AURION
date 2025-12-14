@@ -96,58 +96,104 @@ function switchModal(type) {
 
 // --- ĐĂNG KÝ ---
 async function submitRegister() {
+    // 1. Lấy dữ liệu từ form
     const email = document.getElementById('reg_email').value;
     const password = document.getElementById('reg_password').value;
     const errorDiv = 'reg_error';
+    
+    // 2. Reset thông báo lỗi cũ (nếu có)
+    const errEl = document.getElementById(errorDiv);
+    if (errEl) errEl.classList.add('hidden');
 
-    document.getElementById(errorDiv).classList.add('hidden');
-
+    // 3. Validate cơ bản phía Client
     if (!email || !password) {
         showInlineMessage(errorDiv, "Please fill in all fields", "error");
         return;
     }
+    if (password.length < 6) {
+        showInlineMessage(errorDiv, "Password must be at least 6 characters", "error");
+        return;
+    }
 
-    const btn = document.querySelector('#registerModal button');
+    // 4. [QUAN TRỌNG] Lấy mã giới thiệu từ bộ nhớ (nếu người dùng đã click link trước đó)
+    // Nếu không có, biến này sẽ là null
+    const referralCode = localStorage.getItem('referral_code');
+
+    // 5. Hiệu ứng Loading cho nút bấm
+    const btn = document.querySelector('#registerModal button[type="submit"]') || document.querySelector('#registerModal button');
     const originalText = btn ? btn.innerHTML : 'Sign Up';
-    if(btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
+    if(btn) { 
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...'; 
+        btn.disabled = true; 
+    }
 
     try {
+        // 6. Gửi API đăng ký kèm Referral Code
         const response = await fetch('/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, full_name: "User" })
+            body: JSON.stringify({ 
+                email, 
+                password, 
+                full_name: "User", // Tên mặc định, người dùng có thể đổi sau trong Profile
+                referral_code: referralCode // <--- Gửi mã lên server để tính thưởng
+            })
         });
         const data = await response.json();
 
+        // 7. Xử lý kết quả trả về
         if (data.status === "success") {
-            showInlineMessage(errorDiv, "Đăng ký thành công! Đang chuyển...", "success");
-            setTimeout(() => switchModal('login'), 1500);
+            showInlineMessage(errorDiv, "Registration successful! Redirecting to Login...", "success");
+            
+            // [QUAN TRỌNG] Đăng ký thành công -> Xóa mã giới thiệu khỏi máy để sạch sẽ
+            localStorage.removeItem('referral_code');
+
+            // Chuyển sang màn hình Login sau 1.5s để người dùng kịp đọc thông báo
+            setTimeout(() => {
+                switchModal('login');
+                // Tự động điền email vừa đăng ký vào ô Login cho tiện
+                const logEmail = document.getElementById('log_email');
+                if(logEmail) logEmail.value = email;
+            }, 1500);
         } else {
-            showInlineMessage(errorDiv, data.message || "Đăng ký thất bại", "error");
+            showInlineMessage(errorDiv, data.message || "Registration failed", "error");
         }
     } catch (e) {
-        showInlineMessage(errorDiv, "Lỗi kết nối tới Server", "error");
+        console.error("Register error:", e);
+        showInlineMessage(errorDiv, "Connection error to Server. Please check your internet.", "error");
     } finally {
-        if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
+        // 8. Trả lại trạng thái nút bấm ban đầu
+        if(btn) { 
+            btn.innerHTML = originalText; 
+            btn.disabled = false; 
+        }
     }
 }
+
 
 // --- ĐĂNG NHẬP ---
 async function submitLogin() {
     const email = document.getElementById('log_email').value;
     const password = document.getElementById('log_password').value;
     const errorDiv = 'log_error';
+    
+    // 1. Reset trạng thái lỗi cũ
+    const errEl = document.getElementById(errorDiv);
+    if (errEl) errEl.classList.add('hidden');
 
-    document.getElementById(errorDiv).classList.add('hidden');
-
+    // 2. Validate client-side
     if (!email || !password) {
         showInlineMessage(errorDiv, "Please fill in all fields", "error");
         return;
     }
 
-    const btn = document.querySelector('#loginModal button');
+    // 3. Hiệu ứng Loading
+    const btn = document.querySelector('#loginModal button[type="submit"]') || document.querySelector('#loginModal button');
     const originalText = btn ? btn.innerHTML : 'Log In';
-    if(btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
+    if(btn) { 
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...'; 
+        btn.disabled = true; 
+    }
 
     try {
         const response = await fetch('/api/login', {
@@ -158,18 +204,34 @@ async function submitLogin() {
         const data = await response.json();
 
         if (data.status === "success") {
+            // Xóa token cũ hoặc referral code cũ (nếu có) để tránh rác
+            localStorage.removeItem('referral_code'); 
+            
+            // Lưu token mới
             localStorage.setItem('session_token', data.session_token);
-            showInlineMessage(errorDiv, "Login Success!", "success");
-            setTimeout(() => window.location.href = data.redirect || "/frontend/chat.html", 1000);
+            
+            showInlineMessage(errorDiv, "Login Success! Redirecting...", "success");
+            
+            // Redirect sau 1s
+            setTimeout(() => {
+                window.location.href = data.redirect || "/frontend/chat.html";
+            }, 1000);
         } else {
             showInlineMessage(errorDiv, data.message || "Invalid credentials", "error");
         }
     } catch (e) {
-        showInlineMessage(errorDiv, "Connection Error", "error");
+        console.error("Login error:", e);
+        showInlineMessage(errorDiv, "Connection Error. Please try again.", "error");
     } finally {
-        if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
+        // Reset nút bấm
+        if(btn) { 
+            btn.innerHTML = originalText; 
+            btn.disabled = false; 
+        }
     }
 }
+
+
 
 // --- ĐĂNG XUẤT ---
 function toggleLogoutPopup(e) { e.stopPropagation(); document.getElementById('logoutPopup').classList.toggle('hidden'); }
@@ -183,9 +245,14 @@ async function handleLogout() {
     if(token) {
         try { await fetch('/api/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({session_token: token}) }); } catch (e) {}
     }
+    
+    // [IMPORTANT] Clear everything
     localStorage.removeItem('session_token');
+    localStorage.removeItem('currentBotId'); // Clear previously selected bot
+    sessionStorage.clear(); // Clear temporary session
+    
     showToast("Logged out successfully", "success");
-    setTimeout(() => window.location.href = "/", 1000);
+    setTimeout(() => window.location.href = "/frontend/index.html", 500);
 }
 
 

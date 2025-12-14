@@ -2,14 +2,19 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from connect_database import get_db
-from models import Bot, KnowledgeBase, User
+from models import Bot, Referral, KnowledgeBase, User,  Session
 import shutil
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from fastapi import Request
+from routes_auth import send_pro_success_email, send_credit_success_email
 
 router = APIRouter(prefix="/api", tags=["App"])
-
+PLAN_LIMITS = {
+    "free": 10,   
+    "pro": 1000   
+}
 # --- HÀM LẤY USER MẶC ĐỊNH ---
 async def get_current_user_id(db: AsyncSession):
     result = await db.execute(select(User).limit(1))
@@ -21,6 +26,8 @@ async def get_current_user_id(db: AsyncSession):
 # ===========================
 # 1. QUẢN LÝ BOT
 # ===========================
+
+
 
 @router.get("/bots")
 async def get_bots(db: AsyncSession = Depends(get_db)):
@@ -175,4 +182,93 @@ async def delete_knowledge(kb_id: str, db: AsyncSession = Depends(get_db)):
         return {"status": "success", "message": "File deleted successfully"}
     except Exception as e:
         await db.rollback()
+        return {"status": "error", "message": str(e)}
+    
+@router.get("/subscription")
+async def get_subscription(request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        user_id = await get_current_user_id(request, db)
+        user = (await db.execute(select(User).where(User.id == user_id))).scalars().first()
+        
+        limit = PLAN_LIMITS.get(user.plan_type, 10)
+        expires_str = user.pro_expires_at.strftime("%d/%m/%Y") if user.pro_expires_at else None
+        return {
+            "status": "success",
+            "data": {
+                "plan": user.plan_type, 
+                "usage": user.daily_requests_count,
+                "limit": limit,
+                "percent": min(int((user.daily_requests_count / limit) * 100), 100),
+                "expires_at": expires_str
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.post("/subscription/upgrade")
+async def upgrade_plan(request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        user_id = await get_current_user_id(request, db)
+        user = (await db.execute(select(User).where(User.id == user_id))).scalars().first()
+        
+        user.plan_type = "pro"
+        
+        now = datetime.now(timezone.utc)
+        expired_date = now + timedelta(days=30)
+        user.pro_expires_at = expired_date
+        
+        await db.commit()
+        
+        date_str = expired_date.strftime("%d/%m/%Y")
+        
+        try:
+            send_pro_success_email(user.email, user.full_name or "User", date_str)
+        except Exception as e_mail:
+            print(f"Upgrade email error: {e_mail}")
+            
+        return {"status": "success", "message": f"Pro upgrade successful! Valid until {date_str}"}
+        
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.post("/subscription/buy-credits")
+async def buy_credits(request: Request, amount: int = Form(...), db: AsyncSession = Depends(get_db)):
+    try:
+        user_id = await get_current_user_id(request, db)
+        user = (await db.execute(select(User).where(User.id == user_id))).scalars().first()
+        
+        if not user:
+            return {"status": "error", "message": "User not found"}
+
+        if amount <= 0:
+            return {"status": "error", "message": "Invalid amount"}
+
+        PACKAGES_PRICE = {
+            100: 10000,   
+            500: 45000,   
+            2000: 160000  
+        }
+
+        base_cost = PACKAGES_PRICE.get(amount, amount * 100)
+        
+        final_cost = base_cost
+
+        if user.plan_type == "pro":
+            final_cost = int(base_cost * 0.7)
+            
+        user.credits += amount
+        await db.commit()
+
+        try:
+            send_credit_success_email(user.email, user.full_name or "User", amount, final_cost)
+        except Exception as ex:
+            print(f"Credit email error: {ex}")
+        
+        return {
+            "status": "success", 
+            "message": f"Successfully loaded {amount} Credits!",
+            "new_balance": user.credits,
+            "cost_paid": final_cost 
+        }
+    except Exception as e:
         return {"status": "error", "message": str(e)}
