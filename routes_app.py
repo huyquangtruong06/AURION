@@ -8,6 +8,8 @@ import os
 import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi import Request
+import bcrypt
+from passlib.hash import bcrypt
 from routes_auth import send_pro_success_email, send_credit_success_email
 
 router = APIRouter(prefix="/api", tags=["App"])
@@ -15,27 +17,44 @@ PLAN_LIMITS = {
     "free": 10,   
     "pro": 1000   
 }
+BOT_CREATION_COST = 50 
+
 # --- HÀM LẤY USER MẶC ĐỊNH ---
-async def get_current_user_id(db: AsyncSession):
-    result = await db.execute(select(User).limit(1))
-    user = result.scalars().first()
-    if not user:
-        raise HTTPException(status_code=400, detail="Chưa có tài khoản nào. Vui lòng Đăng ký trước!")
-    return user.id
+async def get_current_user_id(request: Request, db: AsyncSession): 
+    token = request.headers.get("Authorization")
+    
+    if not token or ":" not in token:
+        raise HTTPException(status_code=401, detail="You are not logged in!")
+    
+    try:
+        session_id_str, raw_token = token.split(":", 1)
+        session_id = uuid.UUID(session_id_str)
+        
+        query = await db.execute(select(Session).where(Session.id == session_id))
+        session = query.scalar()
+        
+        if session and bcrypt.verify(raw_token, session.refresh_token_hash):
+            if session.expires_at > datetime.now(timezone.utc):
+                return session.user_id
+            
+    except Exception as e:
+        print(f"Auth Error: {e}")
+        pass
+        
+    raise HTTPException(status_code=401, detail="Invalid session")
 
 # ===========================
 # 1. QUẢN LÝ BOT
 # ===========================
 
-
-
 @router.get("/bots")
-async def get_bots(db: AsyncSession = Depends(get_db)):
+async def get_bots(request: Request, db: AsyncSession = Depends(get_db)):
     try:
-        result = await db.execute(select(Bot).order_by(desc(Bot.created_at)))
+        user_id = await get_current_user_id(request, db)
+        
+        result = await db.execute(select(Bot).where(Bot.user_id == user_id).order_by(desc(Bot.created_at)))
         bots = result.scalars().all()
         
-        # [QUAN TRỌNG] Chuyển đổi dữ liệu sang JSON thủ công để tránh lỗi hiển thị
         data = []
         for bot in bots:
             data.append({
@@ -51,14 +70,22 @@ async def get_bots(db: AsyncSession = Depends(get_db)):
         return {"status": "error", "message": str(e)}
 
 @router.post("/bots/create")
-async def create_bot(
-    name: str = Form(...),
-    description: str = Form(None),
-    system_prompt: str = Form(...),
-    db: AsyncSession = Depends(get_db)
-):
+async def create_bot(request: Request, name: str = Form(...), description: str = Form(None), system_prompt: str = Form(...), db: AsyncSession = Depends(get_db)):
     try:
-        user_id = await get_current_user_id(db)
+        user_id = await get_current_user_id(request, db)
+        
+        user = (await db.execute(select(User).where(User.id == user_id))).scalars().first()
+        if not user: return {"status": "error", "message": "User not found"}
+
+        cost = BOT_CREATION_COST
+        if user.plan_type == "pro":
+            cost = int(cost * 0.7) 
+            
+        if user.credits < cost:
+            return {"status": "error", "message": f"Insufficient Credits! Need {cost} credits (You have {user.credits})."}
+        
+        user.credits -= cost
+
         new_bot = Bot(
             user_id=user_id,
             name=name,
@@ -66,22 +93,33 @@ async def create_bot(
             system_prompt=system_prompt
         )
         db.add(new_bot)
-        await db.commit()
+        
+        await db.commit() 
         await db.refresh(new_bot)
-        return {"status": "success", "message": "Bot created", "bot_id": str(new_bot.id)}
+        
+        return {
+            "status": "success", 
+            "message": f"Bot created (Cost: {cost} credits)", 
+            "bot_id": str(new_bot.id),
+            "remaining_credits": user.credits
+        }
     except Exception as e:
         await db.rollback()
         return {"status": "error", "message": str(e)}
 
 @router.delete("/bots/{bot_id}")
-async def delete_bot(bot_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_bot(request: Request, bot_id: str, db: AsyncSession = Depends(get_db)):
     try:
+        user_id = await get_current_user_id(request, db)
         bot_uuid = uuid.UUID(bot_id)
+        
         result = await db.execute(select(Bot).where(Bot.id == bot_uuid))
         bot = result.scalars().first()
         
-        if not bot:
-            return {"status": "error", "message": "Bot not found"}
+        if not bot: return {"status": "error", "message": "Bot not found"}
+        
+        if bot.user_id != user_id:
+            return {"status": "error", "message": "You do not have permission to delete this Bot (Only Owner can delete)"}
 
         await db.delete(bot)
         await db.commit()

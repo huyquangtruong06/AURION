@@ -324,3 +324,105 @@ async function handleLogout() {
     showToast("Logged out successfully", "success");
     setTimeout(() => window.location.href = "/frontend/index.html", 500);
 }
+
+/* ==========================================================================
+   PART 3: BOT MANAGER (UPDATED: BOT SEARCH)
+   ========================================================================== */
+let allBotsData = []; // [NEW] Variable to store all bots for filtering
+
+function toggleBotModal() { document.getElementById('botModal').classList.toggle('hidden'); }
+
+async function handleCreateBot(event) {
+    event.preventDefault();
+    const btn = event.target.querySelector('button[type="submit"]');
+    btn.innerHTML = 'Creating...'; btn.disabled = true;
+    try {
+        const token = localStorage.getItem('session_token') || "";
+        const res = await fetch('/api/bots/create', { 
+            method: 'POST', 
+            headers: { 'Authorization': token },
+            body: new FormData(event.target) 
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast("Bot created successfully!", "success");
+            toggleBotModal();
+            event.target.reset();
+            loadBots();
+        } else { showToast(data.message, "error"); }
+    } catch (e) { showToast("System error", "error"); }
+    finally { btn.innerHTML = 'Create Bot'; btn.disabled = false; }
+}
+
+// [NEW] Function just to render UI
+// [CẬP NHẬT] Hàm render danh sách Bot có thêm nút Embed
+function renderBotList(bots) {
+    const container = document.getElementById('botListContainer');
+    const empty = document.getElementById('emptyBotState');
+    if (!container) return;
+
+    if (bots.length > 0) {
+        empty.classList.add('hidden');
+        container.innerHTML = bots.map(bot => `
+            <div class="bg-gptInput border border-gray-600 rounded-xl p-6 hover:border-gray-500 transition shadow-lg relative group flex flex-col justify-between h-full">
+                
+                <button onclick="reqDeleteBot('${bot.id}')" class="absolute top-4 right-4 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-2 z-10">
+                    <i class="fas fa-trash"></i>
+                </button>
+
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center text-blue-400 shrink-0">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h3 class="font-bold text-white truncate w-full" title="${bot.name}">${bot.name}</h3>
+                        <p class="text-xs text-gray-500">${new Date(bot.created_at).toLocaleDateString()}</p>
+                    </div>
+                </div>
+
+                <p class="text-gray-400 text-sm mb-6 line-clamp-2 h-10 overflow-hidden">
+                    ${bot.description || 'No description provided.'}
+                </p>
+
+                <div class="flex gap-2 mt-auto">
+                    <a href="/frontend/chat.html?botId=${bot.id}" class="flex-1 py-2.5 bg-gptBlue hover:bg-blue-600 rounded-lg text-sm text-white transition text-center font-medium">
+                        <i class="fas fa-comment-alt mr-2"></i> Chat
+                    </a>
+                    <button onclick="showEmbedCode('${bot.id}')" class="px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm transition" title="Get Embed Code">
+                        <i class="fas fa-code"></i>
+                    </button>
+                </div>
+            </div>`).join('');
+    } else {
+        container.innerHTML = '';
+        empty.classList.remove('hidden');
+    }
+}
+
+async function loadBots() {
+    try {
+        const token = localStorage.getItem('session_token') || "";
+        const res = await fetch('/api/bots', { headers: { 'Authorization': token } });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            allBotsData = data.data; // [NEW] Save data to global variable
+            renderBotList(allBotsData); // Initial display
+        }
+    } catch (e) { console.error(e); }
+
+    // [NEW] Handle search event immediately after load (if not assigned)
+    const searchInput = document.getElementById('botSearchInput');
+    if (searchInput) {
+        searchInput.oninput = function(e) {
+            const term = e.target.value.toLowerCase().trim();
+            const filteredBots = allBotsData.filter(bot => 
+                bot.name.toLowerCase().includes(term) || 
+                (bot.description && bot.description.toLowerCase().includes(term))
+            );
+            renderBotList(filteredBots);
+        }
+    }
+}
+
+function reqDeleteBot(id) { openConfirmModal(() => deleteItem(`/api/bots/${id}`, loadBots)); }
