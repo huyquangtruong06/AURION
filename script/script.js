@@ -426,3 +426,381 @@ async function loadBots() {
 }
 
 function reqDeleteBot(id) { openConfirmModal(() => deleteItem(`/api/bots/${id}`, loadBots)); }
+
+/* ==========================================================================
+   PART 4: KNOWLEDGE MANAGER (KEEP INTACT)
+   ========================================================================== */
+function toggleUploadModal() { document.getElementById('uploadModal').classList.toggle('hidden'); }
+function showFileName(input) {
+    if (input.files[0]) {
+        document.getElementById('fileNameDisplay').textContent = input.files[0].name;
+        document.getElementById('filePreview').classList.remove('hidden');
+    }
+}
+async function loadBotsForDropdown() {
+    const select = document.getElementById('botSelectDropdown');
+    if (!select) return;
+    try {
+        const token = localStorage.getItem('session_token') || "";
+        const res = await fetch('/api/bots', { headers: { 'Authorization': token } });
+        const data = await res.json();
+        select.innerHTML = '<option value="">-- General (All Bots) --</option>';
+        if (data.status === 'success' && data.data) {
+            data.data.forEach(bot => {
+                const option = document.createElement("option");
+                option.value = bot.id;
+                option.textContent = bot.name;
+                select.appendChild(option);
+            });
+        }
+    } catch (e) { console.error("Error loading bot list:", e); }
+}
+async function handleUpload(event) {
+    event.preventDefault();
+    const btn = event.target.querySelector('button[type="submit"]');
+    btn.innerHTML = 'Uploading...'; btn.disabled = true;
+    try {
+        const token = localStorage.getItem('session_token') || "";
+        const res = await fetch('/api/knowledge/upload', { 
+            method: 'POST', 
+            headers: { 'Authorization': token },
+            body: new FormData(event.target) 
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast("Upload successful!", "success");
+            toggleUploadModal();
+            event.target.reset();
+            document.getElementById('filePreview').classList.add('hidden');
+            loadKnowledge();
+        } else { showToast(data.message, "error"); }
+    } catch (e) { showToast("Upload error", "error"); }
+    finally { btn.innerHTML = 'Start Upload'; btn.disabled = false; }
+}
+async function loadKnowledge() {
+    const tbody = document.getElementById('knowledgeListBody');
+    const table = document.getElementById('knowledgeTable');
+    const empty = document.getElementById('emptyDataState');
+    if (!tbody) return;
+    try {
+        const token = localStorage.getItem('session_token') || "";
+        const res = await fetch('/api/knowledge', { headers: { 'Authorization': token } });
+        const data = await res.json();
+        if (data.status === 'success' && data.data.length > 0) {
+            empty.classList.add('hidden'); table.classList.remove('hidden');
+            tbody.innerHTML = data.data.map(f => `
+                <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td class="px-6 py-4 text-white flex flex-col gap-1">
+                        <div class="flex items-center gap-2"><i class="fas fa-file"></i> ${f.filename}</div>
+                        ${f.bot_id ? '<span class="text-[10px] text-blue-400 border border-blue-500/30 rounded px-1 w-fit bg-blue-900/20">Bot Specific</span>' : '<span class="text-[10px] text-gray-500 border border-gray-600 rounded px-1 w-fit">General</span>'}
+                    </td>
+                    <td class="px-6 py-4 text-gray-400">${f.file_size}</td>
+                    <td class="px-6 py-4 text-gray-500">${new Date(f.created_at).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="reqDeleteFile('${f.id}')" class="text-gray-500 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+        } else { table.classList.add('hidden'); empty.classList.remove('hidden'); }
+    } catch (e) { console.error(e); }
+}
+function reqDeleteFile(id) { openConfirmModal(() => deleteItem(`/api/knowledge/${id}`, loadKnowledge)); }
+async function deleteItem(url, reloadCallback) {
+    try {
+        const token = localStorage.getItem('session_token') || "";
+        const res = await fetch(url, { method: 'DELETE', headers: { 'Authorization': token } });
+        const data = await res.json();
+        if (data.status === 'success') { 
+            showToast("Deleted successfully!", "success"); 
+            reloadCallback(); 
+        } else { 
+            showToast(data.message, "error"); 
+        }
+    } catch (e) { showToast("Error while deleting", "error"); }
+}
+
+/* ==========================================================================
+   PART 5: CHAT FUNCTIONALITY (FULL UPDATE: HISTORY, MODEL DROPDOWN, TOOLBAR)
+   ========================================================================== */
+
+let currentModel = "gemini-2.5-flash"; // Global variable to store current model
+
+// Function to get Bot name
+// Function to get Bot name (Updated to support Group Bot)
+async function fetchBotName(botId) {
+    const badge = document.getElementById('botNameBadge');
+    const nameText = document.getElementById('botNameText');
+    if (!badge || !nameText) return;
+
+    badge.classList.remove('hidden');
+    nameText.innerText = "Loading...";
+
+    try {
+        const token = localStorage.getItem('session_token') || "";
+        
+        // [FIX] Call detailed bot API instead of fetching the whole list
+        const res = await fetch(`/api/bots/${botId}`, { headers: { 'Authorization': token } });
+        const data = await res.json();
+        
+        if (data.status === 'success' && data.data) {
+            nameText.innerText = data.data.name;
+        } else {
+            nameText.innerText = "Unknown Bot";
+        }
+    } catch (e) {
+        console.error("Error fetching bot name", e);
+        nameText.innerText = "Bot Error";
+    }
+}
+
+// Function to load chat history from Server
+async function loadChatHistory(botId) {
+    const welcomeState = document.getElementById('welcomeState');
+    const chatWindow = document.getElementById('chatWindow');
+    if(!chatWindow) return;
+
+    // Clear old chat window immediately to prevent ghost messages
+    chatWindow.innerHTML = "";
+
+    try {
+        const token = localStorage.getItem('session_token') || "";
+        // Call History API created in backend
+        const res = await fetch(`/api/chat/history?bot_id=${botId}`, {
+            headers: { 'Authorization': token }
+        });
+        const data = await res.json();
+
+        if (data.status === "success") {
+            if (data.data.length > 0) {
+                // Old messages exist => Hide welcome screen
+                if(welcomeState) welcomeState.classList.add('hidden');
+                
+                // Display loop
+                data.data.forEach(msg => {
+                    // animate=false to load fast, no lag
+                    displayChatBubble(msg.content, msg.role, false, false);
+                });
+                
+                // Scroll to bottom
+                const container = document.getElementById('chatContainer');
+                if(container) container.scrollTop = container.scrollHeight;
+            } else {
+                // No messages => Show welcome screen
+                if(welcomeState) welcomeState.classList.remove('hidden');
+            }
+        }
+    } catch (err) {
+        console.error("Error loading history:", err);
+    }
+}
+
+function initChatPage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const botId = urlParams.get('botId');
+    const welcomeTitle = document.getElementById('welcomeTitle');
+    const welcomeDesc = document.getElementById('welcomeDesc');
+    
+    // 1. CHECK BOT & LOAD DATA
+    if (!botId) {
+        welcomeTitle.innerText = "No Bot Selected!";
+        welcomeDesc.innerText = "Please select a Bot from the list to start chatting.";
+        showToast("⚠️ Please select a Bot to start!", "info");
+    } else {
+        welcomeTitle.innerText = "Ready to chat";
+        welcomeDesc.innerText = "Your Bot is ready. Say something!";
+        
+        // Load name & history
+        fetchBotName(botId);
+        loadHistory(botId);
+    }
+
+    // 2. SETUP MODEL SELECT (Custom Dropdown)
+    const modelBtn = document.getElementById('modelSelectBtn');
+    const modelDropdown = document.getElementById('modelDropdown');
+    const currentModelText = document.getElementById('currentModelText');
+    
+    // Lấy lại danh sách options vì HTML đã thay đổi
+    const modelOptions = document.querySelectorAll('.model-option');
+
+    if (modelBtn && modelDropdown) {
+        modelBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modelDropdown.classList.toggle('hidden');
+        });
+
+        modelOptions.forEach(opt => {
+            opt.addEventListener('click', () => {
+                currentModel = opt.getAttribute('data-value');
+                // Update text, remove (Default) part if present
+                currentModelText.textContent = opt.textContent.split('(')[0].trim();
+                modelDropdown.classList.add('hidden');
+                showToast(`Model selected: ${currentModel}`, "info");
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!modelBtn.contains(e.target)) {
+                modelDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // 3. SETUP TOOLBAR BUTTONS
+    const setupTool = (id, prefix, msg) => {
+        const btn = document.getElementById(id);
+        const inp = document.getElementById('chatInput');
+        if(btn && inp) {
+            btn.addEventListener('click', () => {
+                if(!inp.value.includes(prefix)) {
+                    inp.value = prefix + " " + inp.value;
+                    inp.focus();
+                    showToast(msg, "info");
+                }
+            });
+        }
+    };
+    
+    setupTool('btnWeb', '[WEB SEARCH]', 'Web search mode enabled');
+    setupTool('btnImage', '[GENERATE IMAGE]', 'Image generation mode enabled');
+    
+    const btnIdea = document.getElementById('btnIdea');
+    if(btnIdea) {
+        btnIdea.addEventListener('click', () => {
+            const ideas = ["Summarize this document...", "Write an email to a client...", "Explain Python code..."];
+            const rand = ideas[Math.floor(Math.random() * ideas.length)];
+            const inp = document.getElementById('chatInput');
+            if(inp) { inp.value = rand; inp.focus(); }
+        });
+    }
+
+    // 4. SEND MESSAGE
+    const sendBtn = document.getElementById('sendBtn');
+    const chatInput = document.getElementById('chatInput');
+    const welcomeState = document.getElementById('welcomeState');
+
+    const handleSend = async () => {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        if (!botId) {
+            showToast("🚫 You haven't selected a Bot! Please go back to the Bot page to select one.", "error");
+            return;
+        }
+
+        // UI: Show user message & Hide welcome
+        displayChatBubble(message, 'user');
+        chatInput.value = '';
+        chatInput.style.height = 'auto'; 
+        if(welcomeState) welcomeState.classList.add('hidden');
+
+        // UI: Loading
+        const loadingBubble = displayChatBubble('Gemini is thinking...', 'ai', true);
+
+        try {
+            const token = localStorage.getItem('session_token') || "";
+            const res = await fetch('/api/chat/message', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': token 
+                },
+                body: JSON.stringify({ 
+                    message: message, 
+                    bot_id: botId,
+                    model: currentModel // Send selected model
+                })
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                updateChatBubble(loadingBubble, data.response);
+            } else {
+                updateChatBubble(loadingBubble, "Error: " + data.message, true);
+            }
+        } catch (error) {
+            updateChatBubble(loadingBubble, "Network connection error", true);
+        }
+    };
+
+    if(sendBtn) sendBtn.onclick = handleSend;
+    if(chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    }
+}
+
+// Function to display chat bubble
+function displayChatBubble(text, sender, isLoading = false, animate = true) {
+    const container = document.getElementById('chatWindow');
+    const isUser = sender === 'user';
+    const div = document.createElement('div');
+    // Add class animate-fade-in if needed
+    div.className = `flex w-full ${isUser ? 'justify-end' : 'justify-start'} ${animate ? 'animate-fade-in' : ''}`;
+    
+    div.innerHTML = `
+        <div class="flex max-w-[85%] md:max-w-[75%] gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isUser ? 'bg-gray-600' : 'bg-green-600'}">
+                <i class="fas ${isUser ? 'fa-user' : 'fa-robot'} text-white text-xs"></i>
+            </div>
+            <div class="p-3.5 rounded-2xl shadow-sm text-sm leading-relaxed ${isUser ? 'bg-gptBlue text-white rounded-tr-none' : 'bg-gptInput text-gray-100 rounded-tl-none'}">
+                <div class="message-content whitespace-pre-wrap">${text}</div>
+                ${isLoading ? '<div class="loader-dots text-xs mt-1 opacity-70"></div>' : ''}
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+    const scrollContainer = document.getElementById('chatContainer');
+    if(scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    return div;
+}
+
+// Function to update bubble content (used for loading)
+function updateChatBubble(element, newText, isError = false) {
+    const content = element.querySelector('.message-content');
+    const loader = element.querySelector('.loader-dots');
+    if (loader) loader.remove();
+    content.innerText = newText;
+    if(isError) content.classList.add('text-red-400');
+    const scrollContainer = document.getElementById('chatContainer');
+    if(scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+}
+
+/* ==========================================================================
+   PART 6: EMBED WIDGET LOGIC (NEW)
+   ========================================================================== */
+
+function showEmbedCode(botId) {
+    const modal = document.getElementById('embedModal');
+    const codeBlock = document.getElementById('embedCodeText');
+    
+    if (modal && codeBlock) {
+        // Tự động lấy domain hiện tại (localhost hoặc web thật)
+        const origin = window.location.origin; 
+        
+        // Tạo đoạn mã script nhúng
+        const code = `<script src="${origin}/script/widget.js?bot_id=${botId}" defer><\/script>`;
+        
+        codeBlock.innerText = code;
+        modal.classList.remove('hidden');
+    } else {
+        console.error("Embed Modal elements not found in HTML");
+    }
+}
+
+function copyEmbedCode() {
+    const codeBlock = document.getElementById('embedCodeText');
+    if (codeBlock) {
+        navigator.clipboard.writeText(codeBlock.innerText).then(() => {
+            showToast("Code copied to clipboard!", "success");
+        }).catch(() => {
+            showToast("Failed to copy code", "error");
+        });
+    }
+}
