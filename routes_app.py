@@ -6,11 +6,19 @@ from models import Bot, Referral, KnowledgeBase, User,  Group, GroupMember, Grou
 import shutil
 import os
 import uuid
+import mimetypes
 from datetime import datetime, timezone, timedelta
 from fastapi import Request
 import bcrypt
 from passlib.hash import bcrypt
 from routes_auth import send_pro_success_email, send_credit_success_email
+from pydantic import BaseModel
+import cloudinary
+import cloudinary.uploader
+import requests
+import io
+import tempfile
+from groq import Groq 
 
 router = APIRouter(prefix="/api", tags=["App"])
 PLAN_LIMITS = {
@@ -533,4 +541,28 @@ async def delete_group(request: Request, group_id: str, db: AsyncSession = Depen
             await db.commit()
             return {"status": "success", "message": "Group deleted"}
         return {"status": "error", "message": "Group does not exist"}
+    except Exception as e: return {"status": "error", "message": str(e)}
+
+# referrals
+@router.get("/referrals")
+async def get_referrals(request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        uid = await get_current_user_id(request, db)
+        refs = (await db.execute(select(Referral).where(Referral.referrer_id == uid).order_by(desc(Referral.created_at)))).scalars().all()
+        
+        data = [{"email": r.referred_email, "status": r.status, "date": r.created_at.strftime("%Y-%m-%d")} for r in refs]
+        return {"status": "success", "data": data, "count": len(data)}
+    except Exception as e: return {"status": "error", "message": str(e)}
+
+@router.post("/referrals/create")
+async def create_referral(request: Request, email: str = Form(...), db: AsyncSession = Depends(get_db)):
+    try:
+        uid = await get_current_user_id(request, db)
+        
+        exist = (await db.execute(select(Referral).where(Referral.referrer_id == uid, Referral.referred_email == email))).scalars().first()
+        if exist: return {"status": "error", "message": "This email has already been referred"}
+        
+        db.add(Referral(referrer_id=uid, referred_email=email))
+        await db.commit()
+        return {"status": "success", "message": "Referral saved"}
     except Exception as e: return {"status": "error", "message": str(e)}
