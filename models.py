@@ -1,5 +1,5 @@
 from sqlalchemy.orm import declarative_base, mapped_column, relationship
-from sqlalchemy import String, Boolean, DateTime, ForeignKey, text, Text, Integer
+from sqlalchemy import String, Boolean, DateTime, ForeignKey, text, Text, UniqueConstraint, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 import uuid     
@@ -85,3 +85,36 @@ class Referral(Base):
     referred_email = mapped_column(String, nullable=False)
     status = mapped_column(String, default="PENDING")
     created_at = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+# ========================================================
+# 3. QUẢN LÝ NHÓM (GROUPS)
+# ========================================================
+
+class Group(Base):
+    __tablename__ = "groups"
+    id = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    name = mapped_column(String, nullable=False)
+    description = mapped_column(String, nullable=True)
+    owner_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+class GroupMember(Base):
+    __tablename__ = "group_members"
+    id = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    group_id = mapped_column(UUID(as_uuid=True), ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+    user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    role = mapped_column(String, default="MEMBER") 
+    joined_at = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+    # Ràng buộc: Một người chỉ được vào 1 nhóm một lần
+    __table_args__ = (UniqueConstraint('group_id', 'user_id', name='uq_group_member'),)
+
+class GroupBot(Base):
+    __tablename__ = "group_bots"
+    id = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    group_id = mapped_column(UUID(as_uuid=True), ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+    bot_id = mapped_column(UUID(as_uuid=True), ForeignKey("bots.id", ondelete="CASCADE"), nullable=False)
+    added_at = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+    # Ràng buộc: Một nhóm chỉ có 1 Bot (hoặc các bot không trùng nhau)
+    __table_args__ = (UniqueConstraint('group_id', 'bot_id', name='uq_group_bot'),)

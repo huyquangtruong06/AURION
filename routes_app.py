@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, delete
 from connect_database import get_db
-from models import Bot, Referral, KnowledgeBase, User,  Session
+from models import Bot, Referral, KnowledgeBase, User,  Group, GroupMember, GroupBot, Session
 import shutil
 import os
 import uuid
@@ -42,6 +42,17 @@ async def get_current_user_id(request: Request, db: AsyncSession):
         pass
         
     raise HTTPException(status_code=401, detail="Invalid session")
+
+async def check_is_owner(db: AsyncSession, group_id: uuid.UUID, user_id: uuid.UUID):
+    stmt = select(GroupMember).where(
+        GroupMember.group_id == group_id, 
+        GroupMember.user_id == user_id, 
+        GroupMember.role == "OWNER"
+    )
+    check = (await db.execute(stmt)).scalars().first()
+    
+    if not check:
+        raise HTTPException(status_code=403, detail="Only the Group Owner has this permission!")
 
 # ===========================
 # 1. QUẢN LÝ BOT
@@ -310,3 +321,216 @@ async def buy_credits(request: Request, amount: int = Form(...), db: AsyncSessio
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
+    
+@router.post("/groups/create")
+async def create_group_direct(request: Request, name: str = Form(...), description: str = Form(None), bot_id: str = Form(...), db: AsyncSession = Depends(get_db)):
+    try:
+        user_id = await get_current_user_id(request, db)
+        bid = uuid.UUID(bot_id)
+
+        bot = (await db.execute(select(Bot).where(Bot.id == bid, Bot.user_id == user_id))).scalars().first()
+        if not bot: return {"status": "error", "message": "Invalid Bot or it does not belong to you"}
+
+        new_group = Group(name=name, description=description, owner_id=user_id)
+        db.add(new_group)
+        await db.commit()
+        await db.refresh(new_group)
+        
+        db.add(GroupMember(group_id=new_group.id, user_id=user_id, role="OWNER"))
+        db.add(GroupBot(group_id=new_group.id, bot_id=bid))
+        
+        await db.commit()
+        return {"status": "success", "message": "Group created and Bot shared!"}
+    except Exception as e: 
+        await db.rollback()
+        return {"status": "error", "message": str(e)}
+
+@router.get("/groups")
+async def get_my_groups(request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        user_id = await get_current_user_id(request, db)
+        stmt = select(Group).join(GroupMember, Group.id == GroupMember.group_id).where(GroupMember.user_id == user_id)
+        groups = (await db.execute(stmt)).scalars().all()
+        
+        data = []
+        for g in groups:
+            count = len((await db.execute(select(GroupMember).where(GroupMember.group_id == g.id))).scalars().all())
+            bot = (await db.execute(select(Bot).join(GroupBot, Bot.id == GroupBot.bot_id).where(GroupBot.group_id == g.id))).scalars().first()
+            data.append({
+                "id": str(g.id), "name": g.name, "description": g.description, 
+                "is_owner": (g.owner_id == user_id), "member_count": count, "bot_name": bot.name if bot else "None"
+            })
+        return {"status": "success", "data": data}
+    except Exception as e: return {"status": "error", "message": str(e)}
+
+@router.get("/groups/{group_id}/knowledge")
+async def get_group_knowledge(group_id: str, request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        user_id = await get_current_user_id(request, db)
+        gid = uuid.UUID(group_id)
+        
+        mem = (await db.execute(select(GroupMember).where(GroupMember.group_id == gid, GroupMember.user_id == user_id))).scalars().first()
+        if not mem: return {"status": "error", "message": "You are not a group member"}
+        
+        gb = (await db.execute(select(GroupBot).where(GroupBot.group_id == gid))).scalars().first()
+        if not gb: return {"status": "success", "data": []}
+
+        stmt = select(KnowledgeBase, User.full_name, User.email)\
+            .join(User, KnowledgeBase.user_id == User.id)\
+            .where(KnowledgeBase.bot_id == gb.bot_id)\
+            .order_by(desc(KnowledgeBase.created_at))
+            
+        results = (await db.execute(stmt)).all()
+        
+        data = []
+        for kb, fname, email in results:
+            data.append({
+                "id": str(kb.id),
+                "filename": kb.filename,
+                "size": kb.file_size,
+                "uploaded_by": fname or email,
+                "is_mine": (kb.user_id == user_id), 
+                "date": kb.created_at.strftime("%Y-%m-%d %H:%M")
+            })
+            
+        return {"status": "success", "data": data}
+    except Exception as e: return {"status": "error", "message": str(e)}
+
+@router.post("/groups/add-member")
+async def add_member_direct(request: Request, group_id: str = Form(...), email: str = Form(...), db: AsyncSession = Depends(get_db)):
+    try:
+        uid = await get_current_user_id(request, db)
+        gid = uuid.UUID(group_id)
+        await check_is_owner(db, gid, uid)
+        
+        target = (await db.execute(select(User).where(User.email == email))).scalars().first()
+        if not target: return {"status": "error", "message": "Email does not exist"}
+        
+        exists = (await db.execute(select(GroupMember).where(GroupMember.group_id == gid, GroupMember.user_id == target.id))).scalars().first()
+        if exists: return {"status": "error", "message": "User already in group"}
+
+        db.add(GroupMember(group_id=gid, user_id=target.id, role="MEMBER"))
+        await db.commit()
+        return {"status": "success", "message": f"Added {email} to group"}
+    except Exception as e: return {"status": "error", "message": str(e)}
+
+@router.put("/groups/leave/{group_id}")
+async def leave_group(group_id: str, request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        user_id = await get_current_user_id(request, db)
+        gid = uuid.UUID(group_id)
+
+        group = (await db.execute(select(Group).where(Group.id == gid))).scalars().first()
+        if not group:
+            return {"status": "error", "message": "Group does not exist"}
+
+        if group.owner_id == user_id:
+            return {
+                "status": "error", 
+                "message": "You are the Owner. You cannot leave the group. Please delete the group if you want to disband it."
+            }
+
+        member_record = (await db.execute(select(GroupMember).where(
+            GroupMember.group_id == gid, 
+            GroupMember.user_id == user_id
+        ))).scalars().first()
+
+        if not member_record:
+            return {"status": "error", "message": "You are not a member of this group"}
+
+        group_bot = (await db.execute(select(GroupBot).where(GroupBot.group_id == gid))).scalars().first()
+        if group_bot:
+            files_to_delete = (await db.execute(select(KnowledgeBase).where(
+                KnowledgeBase.user_id == user_id,
+                KnowledgeBase.bot_id == group_bot.bot_id
+            ))).scalars().all()
+            
+            for f in files_to_delete:
+                if os.path.exists(f.file_path):
+                    try: os.remove(f.file_path)
+                    except: pass
+                await db.delete(f)
+
+        await db.delete(member_record)
+        await db.commit()
+
+        return {"status": "success", "message": "You have left the group successfully"}
+
+    except Exception as e:
+        await db.rollback()
+        return {"status": "error", "message": str(e)}
+
+@router.post("/groups/remove-member")
+async def remove_member(request: Request, group_id: str = Form(...), email: str = Form(...), db: AsyncSession = Depends(get_db)):
+    try:
+        uid = await get_current_user_id(request, db)
+        gid = uuid.UUID(group_id)
+        
+        await check_is_owner(db, gid, uid)
+        
+        target = (await db.execute(select(User).where(User.email == email))).scalars().first()
+        if not target: return {"status": "error", "message": "Email does not exist"}
+        if target.id == uid: return {"status": "error", "message": "Cannot remove yourself"}
+
+        group_bot = (await db.execute(select(GroupBot).where(GroupBot.group_id == gid))).scalars().first()
+        
+        if group_bot:
+            files_to_delete = (await db.execute(select(KnowledgeBase).where(
+                KnowledgeBase.user_id == target.id,  
+                KnowledgeBase.bot_id == group_bot.bot_id
+            ))).scalars().all()
+            
+            for f in files_to_delete:
+                if os.path.exists(f.file_path): 
+                    try: os.remove(f.file_path)
+                    except: pass
+                await db.delete(f)
+
+        await db.execute(delete(GroupMember).where(GroupMember.group_id == gid, GroupMember.user_id == target.id))
+        await db.commit()
+        return {"status": "success", "message": f"Removed {email} and their data from the group."}
+    except Exception as e:
+        await db.rollback() 
+        return {"status": "error", "message": str(e)}
+
+@router.get("/groups/{group_id}/details")
+async def get_group_details(group_id: str, db: AsyncSession = Depends(get_db)):
+    try:
+        gid = uuid.UUID(group_id)
+        stmt = select(User, GroupMember.role).join(GroupMember, User.id==GroupMember.user_id).where(GroupMember.group_id==gid)
+        results = (await db.execute(stmt)).all()
+        members = [{"email": u.email, "full_name": u.full_name, "role": role} for u, role in results]
+        
+        bot = (await db.execute(select(Bot).join(GroupBot, Bot.id==GroupBot.bot_id).where(GroupBot.group_id==gid))).scalars().first()
+        bots = [{"id": str(bot.id), "name": bot.name}] if bot else []
+        return {"status": "success", "data": {"members": members, "bots": bots}}
+    except Exception as e: return {"status": "error", "message": str(e)}
+
+@router.delete("/groups/{group_id}")
+async def delete_group(request: Request, group_id: str, db: AsyncSession = Depends(get_db)):
+    try:
+        uid = await get_current_user_id(request, db)
+        gid = uuid.UUID(group_id)
+        await check_is_owner(db, gid, uid)
+        
+        group_bot = (await db.execute(select(GroupBot).where(GroupBot.group_id == gid))).scalars().first()
+        
+        if group_bot:
+            stmt_files = select(KnowledgeBase).where(
+                KnowledgeBase.bot_id == group_bot.bot_id,
+                KnowledgeBase.user_id != uid 
+            )
+            files = (await db.execute(stmt_files)).scalars().all()
+            for f in files:
+                if os.path.exists(f.file_path):
+                    try: os.remove(f.file_path)
+                    except: pass
+                await db.delete(f)
+
+        group = (await db.execute(select(Group).where(Group.id == gid))).scalars().first()
+        if group:
+            await db.delete(group)
+            await db.commit()
+            return {"status": "success", "message": "Group deleted"}
+        return {"status": "error", "message": "Group does not exist"}
+    except Exception as e: return {"status": "error", "message": str(e)}
