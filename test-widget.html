@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AI-CaaS Widget</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 60px 40px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #718096;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+            text-align: left;
+        }
+        
+        .feature {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+        
+        .feature h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .feature p {
+            color: #718096;
+            line-height: 1.6;
+        }
+        
+        .cta {
+            margin-top: 40px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            font-size: 1.1rem;
+        }
+        
+        .cta strong {
+            font-size: 1.3rem;
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        .code-box {
+            background: #1a202c;
+            color: #48bb78;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            text-align: left;
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+        
+        .code-box code {
+            display: block;
+            white-space: pre;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .container {
+                padding: 40px 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI-CaaS Widget Demo</h1>
+        <p class="subtitle">
+            Welcome to AI-CaaS! This is a test page demonstrating our embedded chat widget. 
+            Click the blue bubble in the bottom-right corner to start chatting with our AI assistant.
+        </p>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h3>Instant Responses</h3>
+                <p>Get real-time answers to your questions powered by advanced AI technology.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🎨</div>
+                <h3>Beautiful Design</h3>
+                <p>Modern, responsive interface that works seamlessly on all devices.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🔧</div>
+                <h3>Easy Integration</h3>
+                <p>Add to your website with just one line of code. No complex setup required.</p>
+            </div>
+        </div>
+        
+        <div class="cta">
+            <strong>👉 Try it now!</strong>
+            Click the chat bubble in the bottom-right corner to start a conversation
+        </div>
+        
+        <div class="code-box">
+            <strong style="color: #63b3ed; margin-bottom: 10px; display: block;">How to embed this widget on your website:</strong>
+            <code>&lt;!-- Add this before closing &lt;/body&gt; tag --&gt;
+&lt;script src="http://localhost:3000/script/widget.js?bot_id=YOUR_BOT_ID"&gt;&lt;/script&gt;</code>
+        </div>
+    </div>
+    
+    <!-- AI-CaaS Widget -->
+    <!-- Thay YOUR_BOT_ID bằng ID bot thực tế của bạn -->
+    <script src="http://localhost:3000/script/widget.js?bot_id=4ef7d153-20d8-4515-abd5-ea955455fbdf"></script>
+</body>
+</html>
