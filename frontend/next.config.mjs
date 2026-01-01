@@ -1,7 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
-  reactCompiler: true,
+  experimental: {
+    turbo: {
+      enabled: false
+    }
+  },
   async rewrites() {
     // Chỉ dùng rewrites trong development
     // Production sẽ dùng NEXT_PUBLIC_API_URL trực tiếp

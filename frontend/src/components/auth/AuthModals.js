@@ -212,7 +212,7 @@ export default function AuthModals({ activeModal, setActiveModal }) {
             </form>
 
             <div className="mt-4 text-center text-sm text-gray-400">
-              <button onClick={() => switchModal('forgot')} className="text-gray-400 hover:text-white text-xs underline mb-2 block">
+              <button onClick={() => switchModal('forgot')} className="text-gray-400 hover:text-white text-xs underline mb-2 block text-center w-full">
                 Forgot Password?
               </button>
               Don't have an account? <button onClick={() => switchModal('register')} className="text-blue-400 hover:underline">Sign up</button>
