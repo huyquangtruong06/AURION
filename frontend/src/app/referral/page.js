@@ -130,11 +130,11 @@ export default function ReferralPage() {
                     </div>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
-                    <div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${Math.min((referrals.filter(r => r.status === 'COMPLETED').length / 3) * 100, 100)}%` }}></div>
+                    <div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${Math.min((referrals.length / 3) * 100, 100)}%` }}></div>
                   </div>
                   <div className="flex justify-between text-xs text-gray-400">
-                    <span>{Math.min(referrals.filter(r => r.status === 'COMPLETED').length, 3)}/3 friends</span>
-                    <span>{Math.round(Math.min((referrals.filter(r => r.status === 'COMPLETED').length / 3) * 100, 100))}%</span>
+                    <span>{Math.min(referrals.length, 3)}/3 friends</span>
+                    <span>{Math.round(Math.min((referrals.length / 3) * 100, 100))}%</span>
                   </div>
                 </div>
 
@@ -154,11 +154,11 @@ export default function ReferralPage() {
                     </div>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.min((referrals.filter(r => r.status === 'COMPLETED').length / 7) * 100, 100)}%` }}></div>
+                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.min((referrals.length / 7) * 100, 100)}%` }}></div>
                   </div>
                   <div className="flex justify-between text-xs text-gray-400">
-                    <span>{Math.min(referrals.filter(r => r.status === 'COMPLETED').length, 7)}/7 friends</span>
-                    <span>{Math.round(Math.min((referrals.filter(r => r.status === 'COMPLETED').length / 7) * 100, 100))}%</span>
+                    <span>{Math.min(referrals.length, 7)}/7 friends</span>
+                    <span>{Math.round(Math.min((referrals.length / 7) * 100, 100))}%</span>
                   </div>
                 </div>
               </div>

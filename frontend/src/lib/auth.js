@@ -23,7 +23,9 @@ export const isAuthenticated = () => {
 
 export const logout = () => {
   removeToken();
+  // Clear all localStorage data to prevent data leakage between accounts
   if (typeof window !== 'undefined') {
+    localStorage.removeItem('currentBotId');
     window.location.href = '/';
   }
 };

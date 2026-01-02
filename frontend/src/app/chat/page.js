@@ -68,12 +68,22 @@ export default function ChatPage() {
     fetchBots()
     fetchSubscriptionStatus()
 
-    const savedBotId = localStorage.getItem('currentBotId')
-    if (savedBotId) {
-      setCurrentBotId(savedBotId)
-      loadChatHistory(savedBotId)
+    // Check for bot_id in URL query params (from group chat)
+    const urlParams = new URLSearchParams(window.location.search)
+    const botIdFromUrl = urlParams.get('bot_id')
+
+    if (botIdFromUrl) {
+      setCurrentBotId(botIdFromUrl)
+      localStorage.setItem('currentBotId', botIdFromUrl)
+      loadChatHistory(botIdFromUrl)
     } else {
-      loadChatHistory(null)
+      const savedBotId = localStorage.getItem('currentBotId')
+      if (savedBotId) {
+        setCurrentBotId(savedBotId)
+        loadChatHistory(savedBotId)
+      } else {
+        loadChatHistory(null)
+      }
     }
   }, [])
 

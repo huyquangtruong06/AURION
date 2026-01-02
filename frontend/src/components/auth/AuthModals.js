@@ -49,6 +49,8 @@ export default function AuthModals({ activeModal, setActiveModal }) {
       if (data.status === 'success') {
         const token = data.data?.token || data.session_token
         setToken(token)
+        // Clear chat-related localStorage when logging in as a different user
+        localStorage.removeItem('currentBotId')
         showToast('Login successful!', 'success')
         closeModal()
         router.push('/chat')

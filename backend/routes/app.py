@@ -426,18 +426,30 @@ async def clear_chat_history(bot_id: str, request: Request, db: AsyncSession = D
         return {"status": "error", "message": str(e)}
     
 @router.get("/chat/history")
-async def get_chat_history(bot_id: str = None, db: AsyncSession = Depends(get_db)):
+async def get_chat_history(request: Request, bot_id: str = None, db: AsyncSession = Depends(get_db)):
     try:
+        user_id = await get_current_user_id(request, db)
+        
+        # Get bot_id(s) that belong to the current user
+        user_bots = (await db.execute(select(Bot.id).where(Bot.user_id == user_id))).scalars().all()
+        
         stmt = select(Message).order_by(Message.created_at.asc())
         target_uuid = None
         if bot_id and bot_id.lower() not in ['null', 'undefined', '']:
             try:
                 target_uuid = uuid.UUID(bot_id)
+                # Only show messages from user's own bots
+                if target_uuid not in user_bots:
+                    return {"status": "success", "data": []}
                 stmt = stmt.where(Message.bot_id == target_uuid)
             except:
                 pass
         else:
-            stmt = stmt.where(Message.bot_id.is_(None))
+            # Only show messages from user's bots or no bot
+            if user_bots:
+                stmt = stmt.where(or_(Message.bot_id.is_(None), Message.bot_id.in_(user_bots)))
+            else:
+                stmt = stmt.where(Message.bot_id.is_(None))
             
         result = await db.execute(stmt)
         msgs = result.scalars().all()
@@ -725,7 +737,9 @@ async def get_my_groups(request: Request, db: AsyncSession = Depends(get_db)):
             bot = (await db.execute(select(Bot).join(GroupBot, Bot.id == GroupBot.bot_id).where(GroupBot.group_id == g.id))).scalars().first()
             data.append({
                 "id": str(g.id), "name": g.name, "description": g.description, 
-                "is_owner": (g.owner_id == user_id), "member_count": count, "bot_name": bot.name if bot else "None"
+                "is_owner": (g.owner_id == user_id), "member_count": count, 
+                "bot_name": bot.name if bot else "None",
+                "bot_id": str(bot.id) if bot else None
             })
         return {"status": "success", "data": data}
     except Exception as e: return {"status": "error", "message": str(e)}
