@@ -15,6 +15,8 @@ export default function SubscriptionPage() {
   const [upgrading, setUpgrading] = useState(false)
   const [buyingCredits, setBuyingCredits] = useState(false)
   const [selectedPackage, setSelectedPackage] = useState(null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentType, setPaymentType] = useState(null) // 'credit' or 'pro'
 
   const creditPackages = [
     { amount: 100, price: 10000, discount: 0 },
@@ -44,45 +46,59 @@ export default function SubscriptionPage() {
   }
 
   const handleUpgradeToPro = async () => {
-    if (!confirm('Upgrade to PRO plan for 30 days?')) return
-
-    setUpgrading(true)
-    try {
-      const res = await api.post('/subscription/upgrade')
-      if (res.data.status === 'success') {
-        showToast(res.data.message, 'success')
-        fetchSubscription()
-      } else {
-        showToast(res.data.message, 'error')
-      }
-    } catch (err) {
-      showToast('Failed to upgrade plan', 'error')
-    } finally {
-      setUpgrading(false)
-    }
+    setPaymentType('pro')
+    setSelectedPackage({ amount: 'PRO', price: 99000 })
+    setShowPaymentModal(true)
   }
 
   const handleBuyCredits = async (amount) => {
-    setBuyingCredits(true)
-    try {
-      const formData = new FormData()
-      formData.append('amount', amount.toString())
+    const pkg = creditPackages.find(p => p.amount === amount)
+    // Apply 30% discount for PRO users
+    const finalPrice = planInfo?.plan === 'pro' ? Math.round(pkg.price * 0.7) : pkg.price
+    setPaymentType('credit')
+    setSelectedPackage({ ...pkg, originalPrice: pkg.price, price: finalPrice })
+    setShowPaymentModal(true)
+  }
 
-      const res = await api.post('/subscription/buy-credits', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-
-      if (res.data.status === 'success') {
-        showToast(res.data.message, 'success')
-        setSelectedPackage(null)
-        fetchSubscription()
-      } else {
-        showToast(res.data.message, 'error')
+  const handleSubmitPayment = async () => {
+    if (paymentType === 'pro') {
+      setUpgrading(true)
+      try {
+        const res = await api.post('/subscription/upgrade')
+        if (res.data.status === 'success') {
+          showToast(res.data.message, 'success')
+          fetchSubscription()
+          setShowPaymentModal(false)
+        } else {
+          showToast(res.data.message, 'error')
+        }
+      } catch (err) {
+        showToast('Failed to upgrade plan', 'error')
+      } finally {
+        setUpgrading(false)
       }
-    } catch (err) {
-      showToast('Failed to buy credits', 'error')
-    } finally {
-      setBuyingCredits(false)
+    } else if (paymentType === 'credit') {
+      setBuyingCredits(true)
+      try {
+        const formData = new FormData()
+        formData.append('amount', selectedPackage.amount.toString())
+
+        const res = await api.post('/subscription/buy-credits', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+
+        if (res.data.status === 'success') {
+          showToast(res.data.message, 'success')
+          fetchSubscription()
+          setShowPaymentModal(false)
+        } else {
+          showToast(res.data.message, 'error')
+        }
+      } catch (err) {
+        showToast('Failed to buy credits', 'error')
+      } finally {
+        setBuyingCredits(false)
+      }
     }
   }
 
@@ -97,6 +113,106 @@ export default function SubscriptionPage() {
   return (
     <>
       <ToastContainer />
+      
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#202123] rounded-xl w-full max-w-lg shadow-2xl border border-gray-600 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-600">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <i className="fas fa-qrcode text-green-400"></i>
+                Complete Payment
+              </h2>
+              <button 
+                onClick={() => setShowPaymentModal(false)} 
+                className="text-gray-400 hover:text-white"
+              >
+                <i className="fas fa-times text-xl"></i>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto">
+              {/* Package Info */}
+              <div className="bg-[#40414f] rounded-lg p-4 border border-gray-600">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-gray-400 text-sm">Package</p>
+                    <p className="text-white font-bold text-lg">
+                      {paymentType === 'pro' ? 'AI-CaaS PRO (30 days)' : `${selectedPackage?.amount} Credits`}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-gray-400 text-sm">Amount</p>
+                    {selectedPackage?.originalPrice && selectedPackage.originalPrice !== selectedPackage.price ? (
+                      <div>
+                        <p className="text-gray-500 text-sm line-through">{selectedPackage?.originalPrice?.toLocaleString()} đ</p>
+                        <p className="text-green-400 font-bold text-xl">{selectedPackage?.price?.toLocaleString()} đ</p>
+                        <p className="text-yellow-400 text-xs font-semibold">PRO -30%</p>
+                      </div>
+                    ) : (
+                      <p className="text-green-400 font-bold text-xl">{selectedPackage?.price?.toLocaleString()} đ</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* QR Code */}
+              <div className="bg-white rounded-lg p-4 flex flex-col items-center">
+                <img 
+                  src="https://img.vietqr.io/image/MB-0378888339-compact2.png?amount={selectedPackage?.price}&addInfo=AICAAS%20Payment&accountName=NGUYEN%20VAN%20A" 
+                  alt="QR Payment" 
+                  className="w-64 h-64 object-contain"
+                />
+                <div className="mt-4 text-center">
+                  <p className="text-gray-800 font-bold">MB Bank</p>
+                  <p className="text-gray-600 text-sm">Account: 0378888339</p>
+                  <p className="text-gray-600 text-sm">Name: NGUYEN VAN A</p>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <h3 className="text-blue-400 font-semibold mb-2 flex items-center gap-2">
+                  <i className="fas fa-info-circle"></i>
+                  Payment Instructions
+                </h3>
+                <ol className="text-gray-300 text-sm space-y-1 list-decimal list-inside">
+                  <li>Scan QR code with your banking app</li>
+                  <li>Transfer exactly <span className="font-bold text-green-400">{selectedPackage?.price?.toLocaleString()} đ</span></li>
+                  <li>After successful transfer, click "I've Transferred" below</li>
+                </ol>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="px-6 py-2.5 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitPayment}
+                  disabled={buyingCredits || upgrading}
+                  className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition flex items-center gap-2"
+                >
+                  {buyingCredits || upgrading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-check-circle"></i>
+                      I've Transferred
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="flex h-screen overflow-hidden bg-[#202123] text-gray-100">
         <Sidebar />
@@ -230,10 +346,10 @@ export default function SubscriptionPage() {
                     <div className="mt-auto">
                       <div className="text-gray-300 font-bold text-xl mb-4">10,000 đ</div>
                       <button
-                        disabled={buyingCredits}
+                        disabled={buyingCredits || upgrading}
                         className="w-full py-2.5 rounded-xl bg-gray-700 group-hover:bg-blue-600 text-white transition font-semibold shadow-lg border border-gray-600 group-hover:border-transparent disabled:opacity-50"
                       >
-                        {buyingCredits && selectedPackage === 100 ? 'Processing...' : 'Buy Basic'}
+                        Buy Basic
                       </button>
                     </div>
                   </div>
@@ -257,10 +373,10 @@ export default function SubscriptionPage() {
                     <div className="mt-auto">
                       <div className="text-purple-400 font-bold text-2xl mb-4">45,000 đ</div>
                       <button
-                        disabled={buyingCredits}
+                        disabled={buyingCredits || upgrading}
                         className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition font-bold shadow-lg shadow-purple-900/40 relative overflow-hidden disabled:opacity-50"
                       >
-                        <span className="relative z-10">{buyingCredits && selectedPackage === 500 ? 'Processing...' : 'Buy Standard'}</span>
+                        <span className="relative z-10">Buy Standard</span>
                       </button>
                     </div>
                   </div>
@@ -281,10 +397,10 @@ export default function SubscriptionPage() {
                     <div className="mt-auto">
                       <div className="text-yellow-400 font-bold text-xl mb-4">160,000 đ</div>
                       <button
-                        disabled={buyingCredits}
+                        disabled={buyingCredits || upgrading}
                         className="w-full py-2.5 rounded-xl bg-gray-700 group-hover:bg-yellow-600 text-white transition font-semibold shadow-lg border border-gray-600 group-hover:border-transparent disabled:opacity-50"
                       >
-                        {buyingCredits && selectedPackage === 2000 ? 'Processing...' : 'Buy Premium'}
+                        Buy Premium
                       </button>
                     </div>
                   </div>

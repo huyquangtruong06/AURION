@@ -940,7 +940,10 @@ async def get_subscription(request: Request, db: AsyncSession = Depends(get_db))
                 "usage": user.daily_requests_count,
                 "limit": limit,
                 "percent": min(int((user.daily_requests_count / limit) * 100), 100),
-                "expires_at": expires_str
+                "expires_at": expires_str,
+                "credits": user.credits or 0,
+                "user_name": user.full_name or "User",
+                "user_email": user.email
             }
         }
     except Exception as e:

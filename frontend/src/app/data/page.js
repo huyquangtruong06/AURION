@@ -178,8 +178,8 @@ export default function KnowledgeBasePage() {
                   </label>
                   <div className="relative">
                     <select
-                      value={uploadFormData.botId}
-                      onChange={(e) => setUploadFormData({ ...uploadFormData, botId: e.target.value })}
+                      value={selectedBotId}
+                      onChange={(e) => setSelectedBotId(e.target.value)}
                       className="w-full px-4 py-3 bg-[#40414f] text-white border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 appearance-none"
                     >
                       <option value="">-- General (All Bots) --</option>
