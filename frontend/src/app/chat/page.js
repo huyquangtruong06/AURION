@@ -170,6 +170,11 @@ export default function ChatPage() {
   const handleSendMessage = async (e) => {
     e.preventDefault()
     
+    if (!currentBotId) {
+      showToast('Please select a bot first', 'warning')
+      return
+    }
+    
     if (!inputMessage.trim() || loading) return
 
     const userMessage = inputMessage.trim()
@@ -214,8 +219,8 @@ export default function ChatPage() {
   }
 
   const handleClearHistory = async () => {
-    if (!currentBotId) {
-      showToast('Please select a bot first', 'warning')
+    if (messages.length === 0) {
+      showToast('No history to clear', 'info')
       return
     }
 
@@ -223,14 +228,12 @@ export default function ChatPage() {
   }
 
   const confirmClearHistory = async () => {
-    if (!currentBotId) {
-      showToast('Please select a bot first', 'warning')
-      setShowClearHistoryModal(false)
-      return
-    }
-
     try {
-      const res = await api.delete(`/chat/history/${currentBotId}`)
+      const endpoint = currentBotId 
+        ? `/chat/history/${currentBotId}`
+        : '/chat/history'
+      
+      const res = await api.delete(endpoint)
       if (res.data.status === 'success') {
         setMessages([])
         showToast('Chat history cleared', 'success')
@@ -456,10 +459,10 @@ export default function ChatPage() {
                 <textarea
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Message AI-CaaS..."
+                  placeholder={!currentBotId ? "Please select a bot first..." : "Message AI-CaaS..."}
                   className="w-full bg-transparent border-0 text-white placeholder-gray-400 focus:ring-0 outline-none resize-none px-5 py-4 min-h-[56px] max-h-[200px] overflow-y-auto leading-relaxed custom-scrollbar text-[15px] md:text-sm"
                   rows={1}
-                  disabled={loading}
+                  disabled={loading || !currentBotId}
                 />
 
                 <div className="flex justify-between items-center px-3 pb-3 pt-1">
@@ -517,7 +520,7 @@ export default function ChatPage() {
                   <button
                     type="button"
                     onClick={handleSendMessage}
-                    disabled={loading || !inputMessage.trim()}
+                    disabled={loading || !inputMessage.trim() || !currentBotId}
                     className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-black hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <i className="fas fa-arrow-up text-sm"></i>
