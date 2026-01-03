@@ -346,7 +346,11 @@ async def upload_knowledge(request: Request, file: UploadFile = File(...), bot_i
             except ValueError:
                 pass 
 
-        upload_result = cloudinary.uploader.upload(file.file, resource_type="raw", public_id=file.filename)
+        # Sanitize filename for Cloudinary public_id (remove special chars, spaces)
+        import re
+        sanitized_filename = re.sub(r'[^\w\-.]', '_', file.filename)
+        
+        upload_result = cloudinary.uploader.upload(file.file, resource_type="raw", public_id=sanitized_filename)
         
         file_path = upload_result.get("secure_url")
         

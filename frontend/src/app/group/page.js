@@ -18,6 +18,24 @@ export default function GroupsPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [confirmModal, setConfirmModal] = useState({ show: false, action: null, groupId: null })
+
+  // Helper function to convert UTC to UTC+7
+  const formatDateToUTC7 = (dateString) => {
+    // Backend trả về "YYYY-MM-DD HH:MM", coi đó là UTC time
+    const utcDateString = dateString.replace(' ', 'T') + ':00Z'
+    const date = new Date(utcDateString)
+    
+    // Chuyển sang UTC+7 bằng cách lấy timestamp và add 7 giờ
+    const utc7Timestamp = date.getTime() + (7 * 60 * 60 * 1000)
+    const utc7Date = new Date(utc7Timestamp)
+    
+    const year = utc7Date.getUTCFullYear()
+    const month = String(utc7Date.getUTCMonth() + 1).padStart(2, '0')
+    const day = String(utc7Date.getUTCDate()).padStart(2, '0')
+    const hours = String(utc7Date.getUTCHours()).padStart(2, '0')
+    const minutes = String(utc7Date.getUTCMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hours}:${minutes}`
+  }
   
   const [formData, setFormData] = useState({
     name: '',
@@ -25,6 +43,9 @@ export default function GroupsPage() {
     bot_id: ''
   })
   const [memberEmail, setMemberEmail] = useState('')
+  const [groupFiles, setGroupFiles] = useState([])
+  const [uploading, setUploading] = useState(false)
+  const [fileInputRef, setFileInputRef] = useState(null)
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -172,20 +193,86 @@ export default function GroupsPage() {
       const res = await api.get(`/groups/${groupId}/details`)
       if (res.data.status === 'success') {
         const group = groups.find(g => g.id === groupId)
-        setSelectedGroup({
+        setSelectedGroup(prev => ({
           ...group,
           members: res.data.data.members,
-          bots: res.data.data.bots
-        })
+          bots: res.data.data.bots,
+          activeTab: prev?.activeTab || 'members'
+        }))
       }
     } catch (err) {
       showToast('Failed to load group details', 'error')
     }
   }
 
+  const loadGroupFiles = async (groupId) => {
+    try {
+      const res = await api.get(`/groups/${groupId}/knowledge`)
+      if (res.data.status === 'success') {
+        setGroupFiles(res.data.data)
+      }
+    } catch (err) {
+      showToast('Failed to load files', 'error')
+    }
+  }
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !selectedGroup) return
+
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      showToast('File size exceeds 10MB limit', 'error')
+      return
+    }
+
+    try {
+      setUploading(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('bot_id', selectedGroup.bot_id)
+
+      const res = await api.post('/knowledge/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+
+      if (res.data.status === 'success') {
+        showToast(res.data.message, 'success')
+        // Reload files để hiển thị file mới
+        const filesRes = await api.get(`/groups/${selectedGroup.id}/knowledge`)
+        if (filesRes.data.status === 'success') {
+          setGroupFiles(filesRes.data.data)
+        }
+        if (fileInputRef) fileInputRef.value = ''
+      } else {
+        showToast(res.data.message, 'error')
+      }
+    } catch (err) {
+      showToast('Failed to upload file', 'error')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleDeleteFile = async (fileId) => {
+    try {
+      const res = await api.delete(`/knowledge/${fileId}`)
+      if (res.data.status === 'success') {
+        showToast(res.data.message, 'success')
+        // Cập nhật list trực tiếp
+        setGroupFiles(prev => prev.filter(f => f.id !== fileId))
+      } else {
+        showToast(res.data.message, 'error')
+      }
+    } catch (err) {
+      showToast('Failed to delete file', 'error')
+    }
+  }
+
   const openGroupDetails = async (group) => {
-    await loadGroupDetails(group.id)
     setShowDetailsModal(true)
+    await loadGroupDetails(group.id)
+    loadGroupFiles(group.id)
   }
 
   return (
@@ -521,14 +608,66 @@ export default function GroupsPage() {
                   <div className="mb-3">
                     <i className="fas fa-cloud-upload-alt text-3xl md:text-4xl text-gray-500 group-hover:text-blue-400 transition"></i>
                   </div>
-                  <p className="text-xs md:text-sm text-gray-300 mb-4 px-2">Upload documents (PDF, TXT, DOCX) to train this group's bot.</p>
-                  <button className="bg-blue-500 hover:bg-blue-600 px-5 py-2 rounded-lg text-white text-sm font-medium transition shadow-lg hover:-translate-y-0.5 w-full md:w-auto">
-                    Choose File
-                  </button>
+                  <p className="text-xs md:text-sm text-gray-300 mb-4 px-2">
+                    Upload any document to train this group's bot. Max 10MB.
+                  </p>
+                  <input
+                    type="file"
+                    ref={(ref) => setFileInputRef(ref)}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="file-upload"
+                    disabled={uploading}
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="inline-block bg-blue-500 hover:bg-blue-600 px-5 py-2 rounded-lg text-white text-sm font-medium transition shadow-lg hover:-translate-y-0.5 w-full md:w-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {uploading ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        Uploading...
+                      </>
+                    ) : (
+                      'Choose File'
+                    )}
+                  </label>
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-400 mb-3 text-xs uppercase tracking-wider pl-1">Shared Files</h3>
-                  <p className="text-center text-gray-500 py-6 text-sm italic">No documents uploaded.</p>
+                  {groupFiles.length === 0 ? (
+                    <p className="text-center text-gray-500 py-6 text-sm italic">No documents uploaded.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {groupFiles.map((file) => (
+                        <div
+                          key={file.id}
+                          className="flex items-center justify-between p-3 bg-[#40414f]/50 border border-gray-600 rounded-lg hover:bg-gray-700/50 transition"
+                        >
+                          <div className="flex items-center gap-3 overflow-hidden flex-1">
+                            <div className="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                              <i className="fas fa-file-alt"></i>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-white text-sm truncate">{file.filename}</p>
+                              <p className="text-xs text-gray-400">
+                                {file.size} • {file.uploaded_by} • {formatDateToUTC7(file.date)}
+                              </p>
+                            </div>
+                          </div>
+                          {file.is_mine && (
+                            <button
+                              onClick={() => handleDeleteFile(file.id)}
+                              className="text-gray-500 hover:text-red-500 ml-2 transition p-2 rounded hover:bg-red-500/10 shrink-0"
+                              title="Delete File"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
