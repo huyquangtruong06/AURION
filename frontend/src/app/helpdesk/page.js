@@ -55,7 +55,15 @@ export default function HelpdeskPage() {
 
     setSubmitting(true)
     try {
-      const res = await api.post('/tickets/create', createForm)
+      const formData = new FormData()
+      formData.append('subject', createForm.subject)
+      formData.append('description', createForm.description)
+      
+      const res = await api.post('/tickets/create', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
       if (res.data.status === 'success') {
         showToast('Ticket created successfully', 'success')
         setShowCreateModal(false)

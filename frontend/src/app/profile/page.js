@@ -12,12 +12,19 @@ export default function ProfilePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
   const [userData, setUserData] = useState({
     email: '',
     full_name: '',
     plan_type: 'free',
     credits: 0,
     daily_requests_count: 0
+  })
+  const [nameInput, setNameInput] = useState('')
+  const [passwordData, setPasswordData] = useState({
+    old_password: '',
+    new_password: '',
+    confirm_password: ''
   })
 
   useEffect(() => {
@@ -33,6 +40,7 @@ export default function ProfilePage() {
       const res = await api.get('/profile')
       if (res.data.status === 'success') {
         setUserData(res.data.data)
+        setNameInput(res.data.data.full_name || '')
       }
     } catch (err) {
       showToast('Failed to load profile', 'error')
@@ -44,29 +52,69 @@ export default function ProfilePage() {
   const handleUpdateProfile = async (e) => {
     e.preventDefault()
     
-    if (!userData.full_name) {
+    if (!nameInput || !nameInput.trim()) {
       showToast('Full name is required', 'error')
       return
     }
 
+    const newName = nameInput.trim()
     setSaving(true)
     try {
-      const formData = new FormData()
-      formData.append('full_name', userData.full_name)
-
-      const res = await api.post('/profile/update', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const res = await api.post('/profile/update', {
+        full_name: newName
       })
 
       if (res.data.status === 'success') {
         showToast('Profile updated successfully', 'success')
+        // Cập nhật hiển thị ngay lập tức
+        setUserData(prev => ({ ...prev, full_name: newName }))
+        // Reset ô input về rỗng
+        setNameInput('')
       } else {
-        showToast(res.data.message, 'error')
+        showToast(res.data.message || 'Failed to update profile', 'error')
       }
     } catch (err) {
-      showToast('Failed to update profile', 'error')
+      showToast(err.response?.data?.message || 'Failed to update profile', 'error')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault()
+
+    if (!passwordData.old_password || !passwordData.new_password || !passwordData.confirm_password) {
+      showToast('All fields are required', 'error')
+      return
+    }
+
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      showToast('New passwords do not match', 'error')
+      return
+    }
+
+    if (passwordData.new_password.length < 6) {
+      showToast('Password must be at least 6 characters', 'error')
+      return
+    }
+
+    setChangingPassword(true)
+    try {
+      const res = await api.post('/profile/change-password', {
+        old_password: passwordData.old_password,
+        new_password: passwordData.new_password
+      })
+
+      if (res.data.status === 'success') {
+        showToast('Password changed successfully!', 'success')
+        setPasswordData({ old_password: '', new_password: '', confirm_password: '' })
+      } else {
+        showToast(res.data.message || 'Failed to change password', 'error')
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to change password', 'error')
+    } finally {
+      setChangingPassword(false)
     }
   }
 
@@ -109,8 +157,8 @@ export default function ProfilePage() {
                     <label className="block text-sm text-gray-400 mb-1 font-medium">Full Name</label>
                     <input
                       type="text"
-                      value={userData.full_name}
-                      onChange={(e) => setUserData({ ...userData, full_name: e.target.value })}
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
                       className="w-full bg-[#2A2B32] border border-gray-600 text-white rounded-lg px-3 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-base md:text-sm"
                       placeholder="Enter your full name"
                     />
@@ -130,11 +178,13 @@ export default function ProfilePage() {
                 <h2 className="text-lg md:text-xl font-semibold mb-4 border-b border-gray-600 pb-2 text-white flex items-center gap-2">
                   <i className="fas fa-lock text-green-400"></i> Change Password
                 </h2>
-                <div className="grid gap-4">
+                <form onSubmit={handleChangePassword} className="grid gap-4">
                   <div>
                     <label className="block text-sm text-gray-400 mb-1 font-medium">Current Password</label>
                     <input
                       type="password"
+                      value={passwordData.old_password}
+                      onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
                       className="w-full bg-[#2A2B32] border border-gray-600 text-white rounded-lg px-3 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-base md:text-sm"
                       placeholder="Current Password"
                     />
@@ -143,6 +193,8 @@ export default function ProfilePage() {
                     <label className="block text-sm text-gray-400 mb-1 font-medium">New Password</label>
                     <input
                       type="password"
+                      value={passwordData.new_password}
+                      onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
                       className="w-full bg-[#2A2B32] border border-gray-600 text-white rounded-lg px-3 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-base md:text-sm"
                       placeholder="New Password"
                     />
@@ -151,18 +203,20 @@ export default function ProfilePage() {
                     <label className="block text-sm text-gray-400 mb-1 font-medium">Confirm New Password</label>
                     <input
                       type="password"
+                      value={passwordData.confirm_password}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
                       className="w-full bg-[#2A2B32] border border-gray-600 text-white rounded-lg px-3 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-base md:text-sm"
                       placeholder="Confirm New Password"
                     />
                   </div>
                   <button
-                    type="button"
-                    onClick={() => showToast('Password change feature coming soon', 'info')}
-                    className="w-full sm:w-fit px-6 py-2.5 bg-[#10a37f] hover:bg-green-600 rounded-lg font-medium transition text-white shadow-lg text-sm flex items-center justify-center gap-2"
+                    type="submit"
+                    disabled={changingPassword}
+                    className="w-full sm:w-fit px-6 py-2.5 bg-[#10a37f] hover:bg-green-600 rounded-lg font-medium transition text-white shadow-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    <i className="fas fa-sync-alt"></i> Update Password
+                    <i className="fas fa-sync-alt"></i> {changingPassword ? 'Updating...' : 'Update Password'}
                   </button>
-                </div>
+                </form>
               </div>
             </div>
           </div>

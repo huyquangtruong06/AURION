@@ -277,13 +277,23 @@ async def update_profile(request: Request, data: dict, db: AsyncSession = Depend
 async def change_password(request: Request, data: dict, db: AsyncSession = Depends(get_db)):
     try:
         user = await get_current_user(request, db)
-        old_pass = data.get("old_password")
-        new_pass = data.get("new_password")
+        current_password = data.get("current_password")
+        new_password = data.get("new_password")
+        confirm_password = data.get("confirm_password")
         
-        if not bcrypt.verify(old_pass, user.password_hash):
-            return {"status": "error", "message": "Incorrect old password"}
+        if not current_password or not new_password or not confirm_password:
+            return {"status": "error", "message": "All fields are required"}
         
-        user.password_hash = bcrypt.hash(new_pass)
+        if not bcrypt.verify(current_password, user.password_hash):
+            return {"status": "error", "message": "Current password is incorrect"}
+        
+        if new_password != confirm_password:
+            return {"status": "error", "message": "New passwords do not match"}
+        
+        if len(new_password) < 6:
+            return {"status": "error", "message": "Password must be at least 6 characters"}
+        
+        user.password_hash = bcrypt.hash(new_password)
         await db.commit()
         return {"status": "success", "message": "Password changed successfully!"}
     except Exception as e:
