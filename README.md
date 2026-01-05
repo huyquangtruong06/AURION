@@ -19,7 +19,6 @@ cd AURION
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 Frontend: http://localhost:3000
